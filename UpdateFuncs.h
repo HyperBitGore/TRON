@@ -3,56 +3,83 @@
 
 
 //Player input/path drawing
-void playerUpdate(Entity *p, std::vector<Entity>& enemies, SDL_Surface* surf, SDL_Renderer *rend, float delta) {
+void playerUpdate(Entity *p, std::vector<Entity>& enemies, SDL_Surface* surf, SDL_Renderer *rend, float delta, bool wasd = true) {
 	Gore::Edit edit;
 	SDL_PumpEvents();
-	if (keys[SDL_SCANCODE_W]) {
-		(*p).dir = 1;
-		(*p).w = 1;
-		(*p).h = 10;
+	if (wasd) {
+		if (keys[SDL_SCANCODE_W]) {
+			(*p).dir = 1;
+			(*p).w = 1;
+			(*p).h = 10;
+		}
+		else if (keys[SDL_SCANCODE_S]) {
+			(*p).dir = 2;
+			(*p).w = 1;
+			(*p).h = 10;
+		}
+		else if (keys[SDL_SCANCODE_A]) {
+			(*p).dir = 3;
+			(*p).w = 10;
+			(*p).h = 1;
+		}
+		else if (keys[SDL_SCANCODE_D]) {
+			(*p).dir = 4;
+			(*p).w = 10;
+			(*p).h = 1;
+		}
 	}
-	else if (keys[SDL_SCANCODE_S]) {
-		(*p).dir = 2;
-		(*p).w = 1;
-		(*p).h = 10;
+	else {
+		if (keys[SDL_SCANCODE_UP]) {
+			(*p).dir = 1;
+			(*p).w = 1;
+			(*p).h = 10;
+		}
+		else if (keys[SDL_SCANCODE_DOWN]) {
+			(*p).dir = 2;
+			(*p).w = 1;
+			(*p).h = 10;
+		}
+		else if (keys[SDL_SCANCODE_LEFT]) {
+			(*p).dir = 3;
+			(*p).w = 10;
+			(*p).h = 1;
+		}
+		else if (keys[SDL_SCANCODE_RIGHT]) {
+			(*p).dir = 4;
+			(*p).w = 10;
+			(*p).h = 1;
+		}
 	}
-	else if (keys[SDL_SCANCODE_A]) {
-		(*p).dir = 3;
-		(*p).w = 10;
-		(*p).h = 1;
-	}
-	else if (keys[SDL_SCANCODE_D]) {
-		(*p).dir = 4;
-		(*p).w = 10;
-		(*p).h = 1;
+	if ((*p).x < 1 || (*p).x > 799 || (*p).y < 1 || (*p).y > 799) {
+		death(&(*p), enemies, surf, !wasd);
 	}
 	switch ((*p).dir) {
 	case 1:
 		edit.setPixelRGBA(surf, (*p).x, (*p).y + (*p).h + 1, 0, 100, 255, 255);
 		(*p).y -= (float)250 * delta;
 		if (edit.getPixel(surf, (*p).x, (*p).y - 1) != 0) {
-			death(&(*p), enemies, surf);
+			death(&(*p), enemies, surf, !wasd);
 		}
 		break;
 	case 2:
 		edit.setPixelRGBA(surf, (*p).x, (*p).y - 1, 0, 100, 255, 255);
 		(*p).y += (float)250 * delta;
 		if (edit.getPixel(surf, (*p).x, (*p).y + (*p).h + 1) != 0) {
-			death(&(*p), enemies, surf);
+			death(&(*p), enemies, surf, !wasd);
 		}
 		break;
 	case 3:
 		edit.setPixelRGBA(surf, (*p).x + (*p).w + 1, (*p).y, 0, 100, 255, 255);
 		(*p).x -= (float)250 * delta;
 		if (edit.getPixel(surf, (*p).x - 1, (*p).y) != 0) {
-			death(&(*p), enemies, surf);
+			death(&(*p), enemies, surf, !wasd);
 		}
 		break;
 	case 4:
 		edit.setPixelRGBA(surf, (*p).x + 1, (*p).y, 0, 100, 255, 255);
 		(*p).x += (float)250 * delta;
 		if (edit.getPixel(surf, (*p).x + (*p).w + 1, (*p).y) != 0) {
-			death(&(*p), enemies, surf);
+			death(&(*p), enemies, surf, !wasd);
 		}
 		break;
 

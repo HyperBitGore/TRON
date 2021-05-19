@@ -2,6 +2,8 @@
 #undef main
 bool exitf = false;
 const Uint8 *keys;
+int p1score = 0;
+int p2score = 0;
 //Improve enemy ai and add 1v1 mode with two players
 int main(int argc, char **argv) {
 	//SDL initilization
@@ -16,12 +18,18 @@ int main(int argc, char **argv) {
 	SDL_Surface *surf = SDL_CreateRGBSurfaceWithFormat(0, 800, 800, 32, SDL_PIXELFORMAT_RGBA8888);
 	keys = SDL_GetKeyboardState(NULL);
 	Entity player = { 400, 400, 1, 10, 1 };
+	player.resetx = 400;
+	player.resety = 400;
+	Entity p2 = { 200, 200, 1, 10, 1 };
+	p2.resetx = 200;
+	p2.resety = 200;
 	SDL_Rect screenm;
 	screenm.x = 0;
 	screenm.y = 0;
 	screenm.w = 800;
 	screenm.h = 800;
 	SDL_Event e;
+	int renmode = 2;
 	loadEnemies(enemies);
 	//Main game code
 	while (!exitf) {
@@ -35,22 +43,78 @@ int main(int argc, char **argv) {
 		delta = edit.getDelta();
 		SDL_SetRenderDrawColor(rend, 0, 0, 0, 0);
 		SDL_RenderClear(rend);
-		playerUpdate(&player, enemies, surf, rend, delta);
-		int c = 0;
-		for (auto& i : enemies) {
-			enemyUpdate(&i, player, surf, rend, delta);
-			if (i.del) {
-				enemies.erase(enemies.begin() + c);
-				c--;
-			}
-			c++;
-		}
-		if (enemies.size() <= 0) {
-			death(&player, enemies, surf);
-		}
 		SDL_Texture* sceen = SDL_CreateTextureFromSurface(rend, surf);
-		SDL_RenderCopy(rend, sceen, NULL, &screenm);
-		SDL_RenderPresent(rend);
+		SDL_Rect button;
+		button.x = 100;
+		button.y = 150;
+		button.w = 100;
+		button.h = 50;
+		int mx;
+		int my;
+		int c = 0;
+		switch (renmode) {
+		case 1:
+			playerUpdate(&player, enemies, surf, rend, delta);
+			c = -1;
+			for (auto& i : enemies) {
+				c++;
+				enemyUpdate(&i, player, surf, rend, delta);
+				if (i.del) {
+					enemies.erase(enemies.begin() + c);
+					c--;
+				}
+			}
+			if (enemies.size() <= 0) {
+				death(&player, enemies, surf, true);
+			}
+			SDL_RenderCopy(rend, sceen, NULL, &screenm);
+			SDL_RenderPresent(rend);
+			break;
+		case 2:
+			//Normal, Two player, online, and exit button
+			//Buttons 100 px wide, and 50 px tall
+			button.y = 151;
+			SDL_SetRenderDrawColor(rend, 0, 0, 255, 255);
+			SDL_RenderFillRect(rend, &button);
+			button.y = 201;
+			SDL_RenderFillRect(rend, &button);
+			button.y = 251;
+			SDL_RenderFillRect(rend, &button);
+			button.y = 301;
+			SDL_RenderFillRect(rend, &button);
+			if (SDL_GetMouseState(&mx, &my) & SDL_BUTTON(SDL_BUTTON_LEFT)) {
+				if (mx >= 100 && mx <= 200) {
+					if (my >= 151 && my <= 201) {
+						renmode = 1;
+					}
+					else if (my >= 201 && my < 251) {
+						renmode = 3;
+					}
+					else if (my >= 251 && my < 301) {
+						renmode = 4;
+					}
+					else if (my >= 301 && my < 350) {
+						exitf = true;
+					}
+				}
+				std::cout << renmode << std::endl;
+			}
+			SDL_RenderPresent(rend);
+			break;
+		case 3:
+			//Two player mode
+			playerUpdate(&player, enemies, surf, rend, delta);
+			playerUpdate(&p2, enemies, surf, rend, delta, false);
+			SDL_RenderCopy(rend, sceen, NULL, &screenm);
+			SDL_RenderPresent(rend);
+			break;
+		case 4:
+			//Online connect to server menu
+			//Have back to menu button and text dialog where you can enter ip address of server; Probably use imgui for text dialog
+			
+			SDL_RenderPresent(rend);
+			break;
+		}
 		SDL_DestroyTexture(sceen);
 	}
 
