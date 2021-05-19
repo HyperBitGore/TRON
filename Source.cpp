@@ -10,6 +10,9 @@ int main(int argc, char **argv) {
 	if (SDL_Init(SDL_INIT_VIDEO) > 0) {
 		std::cout << "SDL Init failed: " << SDL_GetError << std::endl;
 	}
+	if (!TTF_Init()) {
+		std::cout << "Font init failed" << TTF_GetError << std::endl;
+	}
 	float delta;
 	std::vector<Entity> enemies;
 	Gore::Edit edit;
@@ -17,6 +20,7 @@ int main(int argc, char **argv) {
 	SDL_Renderer *rend = SDL_CreateRenderer(wind, -1, 0);
 	SDL_Surface *surf = SDL_CreateRGBSurfaceWithFormat(0, 800, 800, 32, SDL_PIXELFORMAT_RGBA8888);
 	keys = SDL_GetKeyboardState(NULL);
+	TTF_Font* font = TTF_OpenFont("DelaGothicOne-Regular.ttf", 12);
 	Entity player = { 400, 400, 1, 10, 1 };
 	player.resetx = 400;
 	player.resety = 400;
@@ -28,7 +32,16 @@ int main(int argc, char **argv) {
 	screenm.y = 0;
 	screenm.w = 800;
 	screenm.h = 800;
+	SDL_Color white = { 255, 255, 255 };
 	SDL_Event e;
+	SDL_Surface* text = TTF_RenderText_Solid(font, "Normal Mode", white);
+	SDL_Texture* rtext = SDL_CreateTextureFromSurface(rend, text);
+	text = TTF_RenderText_Solid(font, "Two Player", white);
+	SDL_Texture* rtext2 = SDL_CreateTextureFromSurface(rend, text);
+	text = TTF_RenderText_Solid(font, "Online", white);
+	SDL_Texture* rtext3 = SDL_CreateTextureFromSurface(rend, text);
+	text = TTF_RenderText_Solid(font, "Exit", white);
+	SDL_Texture* rtext4 = SDL_CreateTextureFromSurface(rend, text);
 	int renmode = 2;
 	loadEnemies(enemies);
 	//Main game code
@@ -76,12 +89,16 @@ int main(int argc, char **argv) {
 			button.y = 151;
 			SDL_SetRenderDrawColor(rend, 0, 0, 255, 255);
 			SDL_RenderFillRect(rend, &button);
+			SDL_RenderCopy(rend, rtext, NULL, &button);
 			button.y = 201;
 			SDL_RenderFillRect(rend, &button);
+			SDL_RenderCopy(rend, rtext2, NULL, &button);
 			button.y = 251;
 			SDL_RenderFillRect(rend, &button);
+			SDL_RenderCopy(rend, rtext3, NULL, &button);
 			button.y = 301;
 			SDL_RenderFillRect(rend, &button);
+			SDL_RenderCopy(rend, rtext4, NULL, &button);
 			if (SDL_GetMouseState(&mx, &my) & SDL_BUTTON(SDL_BUTTON_LEFT)) {
 				if (mx >= 100 && mx <= 200) {
 					if (my >= 151 && my <= 201) {
@@ -117,6 +134,12 @@ int main(int argc, char **argv) {
 		}
 		SDL_DestroyTexture(sceen);
 	}
-
+	SDL_DestroyTexture(rtext);
+	SDL_DestroyTexture(rtext2);
+	SDL_DestroyTexture(rtext3);
+	SDL_DestroyTexture(rtext4);
+	SDL_FreeSurface(surf);
+	SDL_DestroyRenderer(rend);
+	SDL_FreeSurface(text);
 	return 0;
 }
