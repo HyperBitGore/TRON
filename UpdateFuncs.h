@@ -55,29 +55,38 @@ void playerUpdate(Entity *p, std::vector<Entity>& enemies, SDL_Surface* surf, SD
 	}
 	switch ((*p).dir) {
 	case 1:
-		edit.setPixelRGBA(surf, (*p).x, (*p).y + (*p).h + 1, 0, 100, 255, 255);
+		//edit.setPixelRGBA(surf, (*p).x, (*p).y + (*p).h, 0, 100, 255, 255);
 		(*p).y -= (float)250 * delta;
+		for (int i = (*p).y; i < (*p).ly; i++) {
+			edit.setPixelRGBA(surf, (*p).x, i, 0, 100, 255, 255);
+		}
 		if (edit.getPixel(surf, (*p).x, (*p).y - 1) != 0) {
 			death(&(*p), enemies, surf, !wasd);
 		}
 		break;
 	case 2:
-		edit.setPixelRGBA(surf, (*p).x, (*p).y - 1, 0, 100, 255, 255);
 		(*p).y += (float)250 * delta;
+		for (int i = (*p).ly; i < (*p).y; i++) {
+			edit.setPixelRGBA(surf, (*p).x, i, 0, 100, 255, 255);
+		}
 		if (edit.getPixel(surf, (*p).x, (*p).y + (*p).h + 1) != 0) {
 			death(&(*p), enemies, surf, !wasd);
 		}
 		break;
 	case 3:
-		edit.setPixelRGBA(surf, (*p).x + (*p).w + 1, (*p).y, 0, 100, 255, 255);
 		(*p).x -= (float)250 * delta;
+		for (int i = (*p).x; i < (*p).lx; i++) {
+			edit.setPixelRGBA(surf, i, (*p).y, 0, 100, 255, 255);
+		}
 		if (edit.getPixel(surf, (*p).x - 1, (*p).y) != 0) {
 			death(&(*p), enemies, surf, !wasd);
 		}
 		break;
 	case 4:
-		edit.setPixelRGBA(surf, (*p).x + 1, (*p).y, 0, 100, 255, 255);
 		(*p).x += (float)250 * delta;
+		for (int i = (*p).lx; i < (*p).x; i++) {
+			edit.setPixelRGBA(surf, i, (*p).y, 0, 100, 255, 255);
+		}
 		if (edit.getPixel(surf, (*p).x + (*p).w + 1, (*p).y) != 0) {
 			death(&(*p), enemies, surf, !wasd);
 		}
@@ -87,6 +96,8 @@ void playerUpdate(Entity *p, std::vector<Entity>& enemies, SDL_Surface* surf, SD
 	SDL_Rect pal = { (*p).x, (*p).y, (*p).w, (*p).h };
 	SDL_SetRenderDrawColor(rend, 0, 0, 255, 255);
 	SDL_RenderFillRect(rend, &pal);
+	(*p).lx = (*p).x;
+	(*p).ly = (*p).y;
 }
 
 //Enemy ai/path drawing
@@ -145,12 +156,16 @@ void enemyUpdate(Entity *p, Entity player, SDL_Surface* surf, SDL_Renderer *rend
 		(*p).h = 10;
 	}
 
-
+	if ((*p).x < 1 || (*p).x > 799 || (*p).y < 1 || (*p).y > 799) {
+		(*p).del = true;
+		return;
+	}
 	switch ((*p).dir) {
 	case 1:
-		edit.setPixelRGBASafe(surf, (*p).x, (*p).y + (*p).h + 1, 255, 100, 0, 255, 800, 800);;
 		(*p).y -= (float)250 * delta;
-
+		for (int i = (*p).y; i < (*p).ly; i++) {
+			edit.setPixelRGBA(surf, (*p).x, i, 255, 100, 0, 255);
+		}
 		if (edit.getPixelSafe(surf, (*p).x, (*p).y - 10) != 0 && (*p).chngdir) {
 			(*p).dir = 4;
 			(*p).w = 10;
@@ -163,8 +178,10 @@ void enemyUpdate(Entity *p, Entity player, SDL_Surface* surf, SDL_Renderer *rend
 		}
 		break;
 	case 2:
-		edit.setPixelRGBASafe(surf, (*p).x, (*p).y - 1, 255, 100, 0, 255, 800, 800);
 		(*p).y += (float)250 * delta;
+		for (int i = (*p).ly; i < (*p).y; i++) {
+			edit.setPixelRGBA(surf, (*p).x, i, 255, 100, 0, 255);
+		}
 		if (edit.getPixelSafe(surf, (*p).x, (*p).y + (*p).h + 10) != 0 && (*p).chngdir) {
 			(*p).dir = 3;
 			(*p).w = 10;
@@ -177,8 +194,10 @@ void enemyUpdate(Entity *p, Entity player, SDL_Surface* surf, SDL_Renderer *rend
 		}
 		break;
 	case 3:
-		edit.setPixelRGBASafe(surf, (*p).x + (*p).w + 1, (*p).y, 255, 100, 0, 255, 800, 800);
 		(*p).x -= (float)250 * delta;
+		for (int i = (*p).x; i < (*p).lx; i++) {
+			edit.setPixelRGBA(surf, i, (*p).y, 255, 100, 0, 255);
+		}
 		if (edit.getPixelSafe(surf, (*p).x - 10, (*p).y) != 0 && (*p).chngdir) {
 			(*p).dir = 1;
 			(*p).w = 1;
@@ -192,8 +211,10 @@ void enemyUpdate(Entity *p, Entity player, SDL_Surface* surf, SDL_Renderer *rend
 		}
 		break;
 	case 4:
-		edit.setPixelRGBASafe(surf, (*p).x + 1, (*p).y, 255, 100, 0, 255, 800, 800);
 		(*p).x += (float)250 * delta;
+		for (int i = (*p).lx; i < (*p).x; i++) {
+			edit.setPixelRGBA(surf, i, (*p).y, 255, 100, 0, 255);
+		}
 		if (edit.getPixelSafe(surf, (*p).x - 10, (*p).y) != 0 && (*p).chngdir) {
 			(*p).dir = 2;
 			(*p).w = 1;
@@ -210,4 +231,6 @@ void enemyUpdate(Entity *p, Entity player, SDL_Surface* surf, SDL_Renderer *rend
 	SDL_Rect pal = { (*p).x, (*p).y, (*p).w, (*p).h };
 	SDL_SetRenderDrawColor(rend, 255, 0, 0, 255);
 	SDL_RenderFillRect(rend, &pal);
+	(*p).lx = (*p).x;
+	(*p).ly = (*p).y;
 }

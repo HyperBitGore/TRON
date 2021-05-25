@@ -24,7 +24,11 @@ int main(int argc, char **argv) {
 	Entity player = { 400, 400, 1, 10, 1 };
 	player.resetx = 400;
 	player.resety = 400;
+	player.lx = player.x;
+	player.ly = player.y;
 	Entity p2 = { 200, 200, 1, 10, 1 };
+	p2.lx = p2.x;
+	p2.ly = p2.y;
 	p2.resetx = 200;
 	p2.resety = 200;
 	SDL_Rect screenm;

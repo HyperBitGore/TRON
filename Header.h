@@ -22,24 +22,36 @@ struct Entity {
 	bool chngdir;
 	float resetx;
 	float resety;
+	float lx;
+	float ly;
 };
 void loadEnemies(std::vector<Entity>& enemies) {
 	Entity e1 = { 200, 100, 1, 10, 2 };
 	e1.del = false;
 	e1.dirtimer = 0.0f;
 	e1.chngdir = false;
+	e1.lx = e1.x;
+	e1.ly = e1.y;
 	enemies.push_back(e1);
 	e1.x = 100;
 	e1.y = 500;
+	e1.lx = e1.x;
+	e1.ly = e1.y;
 	enemies.push_back(e1);
 	e1.x = 600;
 	e1.y = 50;
+	e1.lx = e1.x;
+	e1.ly = e1.y;
 	enemies.push_back(e1);
 	e1.x = 700;
 	e1.y = 600;
+	e1.lx = e1.x;
+	e1.ly = e1.y;
 	enemies.push_back(e1);
 	e1.x = 60;
 	e1.y = 300;
+	e1.lx = e1.x;
+	e1.ly = e1.y;
 	enemies.push_back(e1);
 }
 void death(Entity *p, std::vector<Entity>& enemies, SDL_Surface* surf, bool p2) {
