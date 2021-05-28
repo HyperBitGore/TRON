@@ -114,8 +114,13 @@ void enemyUpdate(Entity *p, Entity player, SDL_Surface* surf, SDL_Renderer *rend
 		(*p).w = 1;
 		(*p).h = 10;
 	}
+	else if (player.x == (*p).x) {
+		(*p).dir = 4;
+		(*p).w = 10;
+		(*p).h = 1;
+	}
 	(*p).dirtimer += delta;
-	if ((*p).dirtimer >= 0.08f) {
+	if ((*p).dirtimer >= 0.03f) {
 		(*p).chngdir = true;
 		(*p).dirtimer = 0;
 	}
@@ -160,67 +165,75 @@ void enemyUpdate(Entity *p, Entity player, SDL_Surface* surf, SDL_Renderer *rend
 		(*p).del = true;
 		return;
 	}
+	dirc:
 	switch ((*p).dir) {
 	case 1:
+		for (int i = 1; i < 11; i++) {
+			if (edit.getPixelSafe(surf, (*p).x, (*p).y - i) != 0 && (*p).chngdir) {
+				(*p).dir = 4;
+				(*p).w = 10;
+				(*p).h = 1;
+				(*p).chngdir = false;
+				//goto dirc;
+			}
+		}
 		(*p).y -= (float)250 * delta;
 		for (int i = (*p).y; i < (*p).ly; i++) {
 			edit.setPixelRGBA(surf, (*p).x, i, 255, 100, 0, 255);
-		}
-		if (edit.getPixelSafe(surf, (*p).x, (*p).y - 10) != 0 && (*p).chngdir) {
-			(*p).dir = 4;
-			(*p).w = 10;
-			(*p).h = 1;
-			(*p).chngdir = false;
-
 		}
 		if (edit.getPixelSafe(surf, (*p).x, (*p).y - 1) != 0) {
 			(*p).del = true;
 		}
 		break;
 	case 2:
+		for (int i = 1; i < 11; i++) {
+			if (edit.getPixelSafe(surf, (*p).x, (*p).y + (*p).h + i) != 0 && (*p).chngdir) {
+				(*p).dir = 3;
+				(*p).w = 10;
+				(*p).h = 1;
+				(*p).chngdir = false;
+				//goto dirc;
+			}
+		}
 		(*p).y += (float)250 * delta;
 		for (int i = (*p).ly; i < (*p).y; i++) {
 			edit.setPixelRGBA(surf, (*p).x, i, 255, 100, 0, 255);
-		}
-		if (edit.getPixelSafe(surf, (*p).x, (*p).y + (*p).h + 10) != 0 && (*p).chngdir) {
-			(*p).dir = 3;
-			(*p).w = 10;
-			(*p).h = 1;
-			(*p).chngdir = false;
-
 		}
 		if (edit.getPixelSafe(surf, (*p).x, (*p).y + (*p).h + 1) != 0) {
 			(*p).del = true;
 		}
 		break;
 	case 3:
+		for (int i = 1; i < 11; i++) {
+			if (edit.getPixelSafe(surf, (*p).x - i, (*p).y) != 0 && (*p).chngdir) {
+				(*p).dir = 1;
+				(*p).w = 1;
+				(*p).h = 10;
+				(*p).chngdir = false;
+				//goto dirc;
+			}
+		}
 		(*p).x -= (float)250 * delta;
 		for (int i = (*p).x; i < (*p).lx; i++) {
 			edit.setPixelRGBA(surf, i, (*p).y, 255, 100, 0, 255);
 		}
-		if (edit.getPixelSafe(surf, (*p).x - 10, (*p).y) != 0 && (*p).chngdir) {
-			(*p).dir = 1;
-			(*p).w = 1;
-			(*p).h = 10;
-			(*p).chngdir = false;
-
-		}
-
 		if (edit.getPixelSafe(surf, (*p).x - 1, (*p).y) != 0) {
 			(*p).del = true;
 		}
 		break;
 	case 4:
+		for (int i = 1; i < 11; i++) {
+			if (edit.getPixelSafe(surf, (*p).x - i, (*p).y) != 0 && (*p).chngdir) {
+				(*p).dir = 2;
+				(*p).w = 1;
+				(*p).h = 10;
+				(*p).chngdir = false;
+				//goto dirc;
+			}
+		}
 		(*p).x += (float)250 * delta;
 		for (int i = (*p).lx; i < (*p).x; i++) {
 			edit.setPixelRGBA(surf, i, (*p).y, 255, 100, 0, 255);
-		}
-		if (edit.getPixelSafe(surf, (*p).x - 10, (*p).y) != 0 && (*p).chngdir) {
-			(*p).dir = 2;
-			(*p).w = 1;
-			(*p).h = 10;
-			(*p).chngdir = false;
-
 		}
 		if (edit.getPixelSafe(surf, (*p).x + (*p).w + 1, (*p).y) != 0) {
 			(*p).del = true;
