@@ -4,7 +4,7 @@ bool exitf = false;
 const Uint8 *keys;
 int p1score = 0;
 int p2score = 0;
-//Improve enemy ai and add 1v1 mode with two players
+//Add multiplayer mode
 int main(int argc, char **argv) {
 	//SDL initilization
 	if (SDL_Init(SDL_INIT_VIDEO) > 0) {
@@ -26,11 +26,11 @@ int main(int argc, char **argv) {
 	player.resety = 400;
 	player.lx = player.x;
 	player.ly = player.y;
-	Entity p2 = { 200, 200, 1, 10, 1 };
+	Entity p2 = { 300, 400, 1, 10, 1 };
 	p2.lx = p2.x;
 	p2.ly = p2.y;
-	p2.resetx = 200;
-	p2.resety = 200;
+	p2.resetx = 300;
+	p2.resety = 400;
 	SDL_Rect screenm;
 	screenm.x = 0;
 	screenm.y = 0;
@@ -46,6 +46,9 @@ int main(int argc, char **argv) {
 	SDL_Texture* rtext3 = SDL_CreateTextureFromSurface(rend, text);
 	text = TTF_RenderText_Solid(font, "Exit", white);
 	SDL_Texture* rtext4 = SDL_CreateTextureFromSurface(rend, text);
+	asio::io_context aio;
+	asio::ip::tcp::resolver resolv(aio);
+	asio::ip::tcp::socket sock(aio);
 	int renmode = 2;
 	loadEnemies(enemies);
 	//Main game code
@@ -132,7 +135,9 @@ int main(int argc, char **argv) {
 		case 4:
 			//Online connect to server menu
 			//Have back to menu button and text dialog where you can enter ip address of server; Probably use imgui for text dialog
-			
+			//asio::connect(sock, )
+
+
 			SDL_RenderPresent(rend);
 			break;
 		}

@@ -2,11 +2,23 @@
 #include "PixelEdit.h"
 #include "SDL_ttf.h"
 #include <vector>
-//#define ASIO_STANDALONE
-//#include <asio.hpp>
+#include <algorithm>
+#include <string.h>
+#define ASIO_STANDALONE
+#define ASIO_HAS_STD_ADDRESSOF
+#define ASIO_HAS_STD_ARRAY
+#define ASIO_HAS_CSTDINT
+#define ASIO_HAS_STD_SHARED_PTR
+#define ASIO_HAS_STD_TYPE_TRAITS
+#define ASIO_HAS_VARIADIC_TEMPLATES
+#define ASIO_HAS_STD_FUNCTION
+#define ASIO_HAS_STD_CHRONO
+#define BOOST_ALL_NO_LIB
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include <asio.hpp>
 //#include <asio/ts/buffer.hpp>
 //#include <asio/ts/internet.hpp>
-
+//switch to visual studio 2019
 extern const Uint8 *keys;
 extern int p1score;
 extern int p2score;
@@ -58,6 +70,8 @@ void death(Entity *p, std::vector<Entity>& enemies, SDL_Surface* surf, bool p2) 
 	Gore::Edit edit;
 	(*p).x = (*p).resetx;
 	(*p).y = (*p).resety;
+	(*p).lx = (*p).resetx;
+	(*p).ly = (*p).resety;
 	(*p).dir = 1;
 	(*p).h = 10;
 	(*p).w = 1;
