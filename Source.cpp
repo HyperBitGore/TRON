@@ -4,6 +4,38 @@ bool exitf = false;
 const Uint8 *keys;
 int p1score = 0;
 int p2score = 0;
+
+
+void onlineMode(std::string ipadr) {
+	asio::io_context aio;
+	asio::ip::tcp::resolver resolv(aio);
+	unsigned short port = 13;
+	asio::ip::address ip = asio::ip::address::from_string(ipadr);
+	asio::ip::tcp::endpoint end(ip, port);
+	asio::ip::tcp::resolver::results_type endpoints = resolv.resolve(end);
+	asio::ip::tcp::socket sock(aio);
+	asio::error_code ec;
+	//Need server to be running or the connection will throw esoteric exception unless catch error code like so
+	asio::connect(sock, endpoints, ec);
+	if (ec) {
+		std::cout << "Connection error trying again" << std::endl;
+		return;
+	}
+	while (!exitf) {
+		char buf[128];
+		asio::error_code ecode;
+		size_t len = sock.read_some(asio::buffer(buf), ecode);
+		std::cout << buf << std::endl;
+		if (ecode == asio::error::eof) {
+			return;
+		}
+		else if (ecode) {
+			return;
+		}
+	}
+}
+
+
 //Add multiplayer mode
 int main(int argc, char **argv) {
 	//SDL initilization
@@ -37,7 +69,7 @@ int main(int argc, char **argv) {
 	screenm.w = 800;
 	screenm.h = 800;
 	SDL_Color white = { 255, 255, 255 };
-	SDL_Event e;
+	SDL_Event eventi;
 	SDL_Surface* text = TTF_RenderText_Solid(font, "Normal Mode", white);
 	SDL_Texture* rtext = SDL_CreateTextureFromSurface(rend, text);
 	text = TTF_RenderText_Solid(font, "Two Player", white);
@@ -46,15 +78,12 @@ int main(int argc, char **argv) {
 	SDL_Texture* rtext3 = SDL_CreateTextureFromSurface(rend, text);
 	text = TTF_RenderText_Solid(font, "Exit", white);
 	SDL_Texture* rtext4 = SDL_CreateTextureFromSurface(rend, text);
-	asio::io_context aio;
-	asio::ip::tcp::resolver resolv(aio);
-	asio::ip::tcp::socket sock(aio);
 	int renmode = 2;
 	loadEnemies(enemies);
 	//Main game code
 	while (!exitf) {
-		while (SDL_PollEvent(&e)) {
-			switch (e.type) {
+		while (SDL_PollEvent(&eventi)) {
+			switch (eventi.type) {
 			case SDL_QUIT:
 				exitf = true;
 				break;
@@ -121,7 +150,6 @@ int main(int argc, char **argv) {
 						exitf = true;
 					}
 				}
-				std::cout << renmode << std::endl;
 			}
 			SDL_RenderPresent(rend);
 			break;
@@ -133,9 +161,7 @@ int main(int argc, char **argv) {
 			SDL_RenderPresent(rend);
 			break;
 		case 4:
-			//Online connect to server menu
-			//Have back to menu button and text dialog where you can enter ip address of server; Probably use imgui for text dialog
-			//asio::connect(sock, )
+			onlineMode("127.0.0.1");
 
 
 			SDL_RenderPresent(rend);
