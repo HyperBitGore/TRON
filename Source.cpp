@@ -4,37 +4,80 @@ bool exitf = false;
 const Uint8 *keys;
 int p1score = 0;
 int p2score = 0;
+asio::io_context aio;
 
-
-void onlineMode(std::string ipadr) {
-	asio::io_context aio;
-	asio::ip::tcp::resolver resolv(aio);
-	unsigned short port = 13;
-	asio::ip::address ip = asio::ip::address::from_string(ipadr);
-	asio::ip::tcp::endpoint end(ip, port);
-	asio::ip::tcp::resolver::results_type endpoints = resolv.resolve(end);
-	asio::ip::tcp::socket sock(aio);
-	asio::error_code ec;
+//Send this message and a sucessive packet which contains the number by
+//enum messages {INCREASEX, DECREASEX, INCREASEY, DECREASEY, SETDIR, NEWDUMMY};
+enum messages { SETX, SETY, SETDIR, NEWDUMMY };
+std::vector<Dummy> dummies;
+//Have vector of dummy players that only have draw rect in their function
+//Also need to add communication of direction each player is going
+void onlineMode(asio::ip::tcp::socket *sock, Entity *p, float delta, SDL_Renderer* rend) {
+	dummies[0].dir = (*p).dir;
+	for (int i = 0; i < dummies.size(); i++) {
+		dummyUpdate(&dummies[i], delta, rend);
+	}
 	//Need server to be running or the connection will throw esoteric exception unless catch error code like so
-	asio::connect(sock, endpoints, ec);
-	if (ec) {
-		std::cout << "Connection error trying again" << std::endl;
+	//Use points to store needed changes and then send said changes to server and clear the points vector
+	//Have an online player update function that communicates with this function
+	//Send what the packet is and have the packet contain the data of the coord
+	messages m = SETX;
+	int sendn = 0;
+	if ((*p).dir > 2) {
+		sendn = (int)(*p).x;
+		m = SETX;
+	}
+	else {
+		sendn = (int)(*p).y;
+		m = SETY;
+	}
+	int send[2] = { m, sendn};
+	asio::error_code ignore;
+	asio::write(*sock, asio::buffer(send), ignore);
+	int buf[3];
+	asio::error_code ecode;
+	size_t bytes = (*sock).available();
+	size_t len = asio::read(*sock, asio::buffer(buf), ecode);
+	Dummy d;
+	switch (buf[1]) {
+	case SETX:
+		dummies[buf[0]].x = buf[2];
+		break;
+	case SETY:
+		dummies[buf[0]].y = buf[2];
+		break;
+	case SETDIR:
+		dummies[buf[0]].dir = buf[2];
+		break;
+	case NEWDUMMY:
+		d.y = 400;
+		d.x = buf[2];
+		d.w = 1;
+		d.h = 10;
+		d.dir = 1;
+		dummies.push_back(d);
+		break;
+	}
+	if (ecode == asio::error::eof) {
 		return;
 	}
-	while (!exitf) {
-		char buf[128];
-		asio::error_code ecode;
-		size_t len = sock.read_some(asio::buffer(buf), ecode);
-		std::cout << buf << std::endl;
-		if (ecode == asio::error::eof) {
-			return;
-		}
-		else if (ecode) {
-			return;
-		}
+	else if (ecode) {
+		return;
 	}
 }
-
+void startOnlineMode(asio::ip::tcp::socket *sock, Entity *p) {
+	asio::ip::tcp::endpoint end(asio::ip::address::from_string("127.0.0.1"), 13);
+	asio::ip::tcp::resolver resolv(aio);
+	asio::ip::tcp::resolver::results_type endpoints = resolv.resolve(end);
+	asio::error_code ec;
+	(*sock).connect(*endpoints, ec);
+	Dummy d = {(*p).x, (*p).y, (*p).dir, (*p).w, (*p).h};
+	dummies.push_back(d);
+	if (ec) {
+		std::cout << "Connection error: " << ec.message() << std::endl;
+		return;
+	}
+}
 
 //Add multiplayer mode
 int main(int argc, char **argv) {
@@ -79,6 +122,7 @@ int main(int argc, char **argv) {
 	text = TTF_RenderText_Solid(font, "Exit", white);
 	SDL_Texture* rtext4 = SDL_CreateTextureFromSurface(rend, text);
 	int renmode = 2;
+	asio::ip::tcp::socket sock(aio);
 	loadEnemies(enemies);
 	//Main game code
 	while (!exitf) {
@@ -145,6 +189,7 @@ int main(int argc, char **argv) {
 					}
 					else if (my >= 251 && my < 301) {
 						renmode = 4;
+						startOnlineMode(&sock, &player);
 					}
 					else if (my >= 301 && my < 350) {
 						exitf = true;
@@ -161,9 +206,10 @@ int main(int argc, char **argv) {
 			SDL_RenderPresent(rend);
 			break;
 		case 4:
-			onlineMode("127.0.0.1");
+			playerUpdateMultiplayer(&player, enemies, surf, rend, delta);
+			onlineMode(&sock, &player, delta, rend);
 
-
+			SDL_RenderCopy(rend, sceen, NULL, &screenm);
 			SDL_RenderPresent(rend);
 			break;
 		}

@@ -5,16 +5,6 @@
 #include <algorithm>
 #include <string.h>
 #define ASIO_STANDALONE
-#define ASIO_HAS_STD_ADDRESSOF
-#define ASIO_HAS_STD_ARRAY
-#define ASIO_HAS_CSTDINT
-#define ASIO_HAS_STD_SHARED_PTR
-#define ASIO_HAS_STD_TYPE_TRAITS
-#define ASIO_HAS_VARIADIC_TEMPLATES
-#define ASIO_HAS_STD_FUNCTION
-#define ASIO_HAS_STD_CHRONO
-#define BOOST_ALL_NO_LIB
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <asio.hpp>
 //#include <asio/ts/buffer.hpp>
 //#include <asio/ts/internet.hpp>
@@ -22,6 +12,14 @@
 extern const Uint8 *keys;
 extern int p1score;
 extern int p2score;
+
+struct Dummy {
+	int x;
+	int y;
+	int dir;
+	int w;
+	int h;
+};
 
 struct Entity {
 	float x;

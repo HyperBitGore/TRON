@@ -1,6 +1,124 @@
 #pragma once
 #include "Header.h"
 
+//Don't update dummy x and y client side, get x and y changes from server
+void dummyUpdate(Dummy *p, float delta, SDL_Renderer* rend) {
+	switch ((*p).dir) {
+	case 1:
+		(*p).w = 1;
+		(*p).h = 10;
+		break;
+	case 2:
+		(*p).w = 1;
+		(*p).h = 10;
+		break;
+	case 3:
+		(*p).w = 10;
+		(*p).h = 1;
+		break;
+	case 4:
+		(*p).w = 10;
+		(*p).h = 1;
+		break;
+	}
+	std::cout << "X: " << (*p).x << " Y:" << (*p).y << std::endl;
+	SDL_Rect pal = { (*p).x, (*p).y, (*p).w, (*p).h };
+	SDL_SetRenderDrawColor(rend, 0, 0, 255, 255);
+	SDL_RenderFillRect(rend, &pal);
+}
+//Player input/path drawing
+void playerUpdateMultiplayer(Entity* p, std::vector<Entity>& enemies, SDL_Surface* surf, SDL_Renderer* rend, float delta, bool wasd = true) {
+	Gore::Edit edit;
+	SDL_PumpEvents();
+	if (wasd) {
+		if (keys[SDL_SCANCODE_W]) {
+			(*p).dir = 1;
+			(*p).w = 1;
+			(*p).h = 10;
+		}
+		else if (keys[SDL_SCANCODE_S]) {
+			(*p).dir = 2;
+			(*p).w = 1;
+			(*p).h = 10;
+		}
+		else if (keys[SDL_SCANCODE_A]) {
+			(*p).dir = 3;
+			(*p).w = 10;
+			(*p).h = 1;
+		}
+		else if (keys[SDL_SCANCODE_D]) {
+			(*p).dir = 4;
+			(*p).w = 10;
+			(*p).h = 1;
+		}
+	}
+	else {
+		if (keys[SDL_SCANCODE_UP]) {
+			(*p).dir = 1;
+			(*p).w = 1;
+			(*p).h = 10;
+		}
+		else if (keys[SDL_SCANCODE_DOWN]) {
+			(*p).dir = 2;
+			(*p).w = 1;
+			(*p).h = 10;
+		}
+		else if (keys[SDL_SCANCODE_LEFT]) {
+			(*p).dir = 3;
+			(*p).w = 10;
+			(*p).h = 1;
+		}
+		else if (keys[SDL_SCANCODE_RIGHT]) {
+			(*p).dir = 4;
+			(*p).w = 10;
+			(*p).h = 1;
+		}
+	}
+	if ((*p).x < 1 || (*p).x > 799 || (*p).y < 1 || (*p).y > 799) {
+		death(&(*p), enemies, surf, !wasd);
+	}
+	switch ((*p).dir) {
+	case 1:
+		(*p).y -= (float)250 * delta;
+		for (int i = (*p).y; i < (*p).ly; i++) {
+			//edit.setPixelRGBA(surf, (*p).x, i, 0, 100, 255, 255);
+		}
+		if (edit.getPixel(surf, (*p).x, (*p).y - 1) != 0) {
+			death(&(*p), enemies, surf, !wasd);
+		}
+		break;
+	case 2:
+		(*p).y += (float)250 * delta;
+		for (int i = (*p).ly; i < (*p).y; i++) {
+			//edit.setPixelRGBA(surf, (*p).x, i, 0, 100, 255, 255);
+		}
+		if (edit.getPixel(surf, (*p).x, (*p).y + (*p).h + 1) != 0) {
+			death(&(*p), enemies, surf, !wasd);
+		}
+		break;
+	case 3:
+		(*p).x -= (float)250 * delta;
+		for (int i = (*p).x; i < (*p).lx; i++) {
+			//edit.setPixelRGBA(surf, i, (*p).y, 0, 100, 255, 255);
+		}
+		if (edit.getPixel(surf, (*p).x - 1, (*p).y) != 0) {
+			death(&(*p), enemies, surf, !wasd);
+		}
+		break;
+	case 4:
+		(*p).x += (float)250 * delta;
+		for (int i = (*p).lx; i < (*p).x; i++) {
+			//edit.setPixelRGBA(surf, i, (*p).y, 0, 100, 255, 255);
+		}
+		if (edit.getPixel(surf, (*p).x + (*p).w + 1, (*p).y) != 0) {
+			death(&(*p), enemies, surf, !wasd);
+		}
+		break;
+
+	}
+	(*p).ly = (*p).y;
+	(*p).lx = (*p).x;
+}
 
 //Player input/path drawing
 void playerUpdate(Entity *p, std::vector<Entity>& enemies, SDL_Surface* surf, SDL_Renderer *rend, float delta, bool wasd = true) {
@@ -55,7 +173,6 @@ void playerUpdate(Entity *p, std::vector<Entity>& enemies, SDL_Surface* surf, SD
 	}
 	switch ((*p).dir) {
 	case 1:
-		//edit.setPixelRGBA(surf, (*p).x, (*p).y + (*p).h, 0, 100, 255, 255);
 		(*p).y -= (float)250 * delta;
 		for (int i = (*p).y; i < (*p).ly; i++) {
 			edit.setPixelRGBA(surf, (*p).x, i, 0, 100, 255, 255);
