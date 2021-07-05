@@ -7,13 +7,11 @@ int p2score = 0;
 asio::io_context aio;
 
 //Send this message and a sucessive packet which contains the number by
-//enum messages {INCREASEX, DECREASEX, INCREASEY, DECREASEY, SETDIR, NEWDUMMY};
-enum messages { SETX, SETY, SETDIR, NEWDUMMY };
+enum messages { SETX, SETY, SETDIR, NEWDUMMY};
 std::vector<Dummy> dummies;
 //Have vector of dummy players that only have draw rect in their function
-//Also need to add communication of direction each player is going
 void onlineMode(asio::ip::tcp::socket *sock, Entity *p, float delta, SDL_Renderer* rend) {
-	dummies[0].dir = (*p).dir;
+	//dummies[0].dir = (*p).dir;
 	for (int i = 0; i < dummies.size(); i++) {
 		dummyUpdate(&dummies[i], delta, rend);
 	}
@@ -50,7 +48,7 @@ void onlineMode(asio::ip::tcp::socket *sock, Entity *p, float delta, SDL_Rendere
 		dummies[buf[0]].dir = buf[2];
 		break;
 	case NEWDUMMY:
-		d.y = 400;
+		d.y = buf[0];
 		d.x = buf[2];
 		d.w = 1;
 		d.h = 10;
@@ -71,8 +69,19 @@ void startOnlineMode(asio::ip::tcp::socket *sock, Entity *p) {
 	asio::ip::tcp::resolver::results_type endpoints = resolv.resolve(end);
 	asio::error_code ec;
 	(*sock).connect(*endpoints, ec);
-	Dummy d = {(*p).x, (*p).y, (*p).dir, (*p).w, (*p).h};
-	dummies.push_back(d);
+	int buf[3];
+	asio::read(*sock, asio::buffer(buf), ec);
+	Dummy d;
+	if (buf[1] == NEWDUMMY) {
+		d.y = buf[0];
+		d.x = buf[2];
+		d.w = 1;
+		d.h = 10;
+		d.dir = 1;
+		dummies.push_back(d);
+	}
+	//Dummy d = {(*p).x, (*p).y, (*p).dir, (*p).w, (*p).h};
+	//dummies.push_back(d);
 	if (ec) {
 		std::cout << "Connection error: " << ec.message() << std::endl;
 		return;
@@ -165,7 +174,6 @@ int main(int argc, char **argv) {
 			break;
 		case 2:
 			//Normal, Two player, online, and exit button
-			//Buttons 100 px wide, and 50 px tall
 			button.y = 151;
 			SDL_SetRenderDrawColor(rend, 0, 0, 255, 255);
 			SDL_RenderFillRect(rend, &button);

@@ -5,7 +5,7 @@
 #include <thread>
 #include <mutex>
 
-enum messages { SETX, SETY, SETDIR, NEWDUMMY };
+enum messages { SETX, SETY, SETDIR, NEWDUMMY, SENDDUMMIES};
 struct Player {
 	messages m;
 	int x;
@@ -45,27 +45,29 @@ void readInput(Player *p, asio::ip::tcp::socket* soc) {
 		return;
 	}
 }
-void sendChanges(Player p,asio::ip::tcp::socket* soc) {
+void sendChanges(Player *p,asio::ip::tcp::socket* soc) {
 	int buf[3];
 	asio::error_code ec;
-	std::cout << "Writing: " << p.m << " Index: " << p.index << " At: " << soc->remote_endpoint() << std::endl;
-	buf[0] = p.index;
-	buf[1] = p.m;
-	switch (p.m) {
+	std::cout << "Writing: " << (*p).m << " Index: " << (*p).index << " At: " << soc->remote_endpoint() << std::endl;
+	buf[0] = (*p).index;
+	buf[1] = (*p).m;
+	switch (p->m) {
 	case SETX:
-		buf[2] = p.x;
+		buf[2] = (*p).x;
 		break;
 	case SETY:
-		buf[2] = p.y;
+		buf[2] = (*p).y;
 		break;
 	}
-	asio::write(*soc, asio::buffer(buf), ec);
+	for (auto& i : sockets) {
+		asio::write(*i, asio::buffer(buf), ec);
+	}
 }
-void sendNewDummy(int sx, asio::ip::tcp::socket* sock) {
+void sendNewDummy(int sx, int sy, asio::ip::tcp::socket* sock) {
 	std::cout << "Writing new peer to: " << sock->remote_endpoint() << std::endl;
-	char buf[3];
+	int buf[3];
 	asio::error_code ec;
-	buf[0] = sockets.size();
+	buf[0] = sy;
 	buf[1] = NEWDUMMY;
 	buf[2] = sx;
 	asio::write(*sock, asio::buffer(buf), ec);
@@ -83,13 +85,21 @@ void listeningThread() {
 		accept.accept(*soc, ec);
 		iosafe.lock();
 		for (int i = 0; i < sockets.size(); i++) {
-			sendNewDummy(sx, sockets[i]);
+			sendNewDummy(sx, sy, sockets[i]);
 		}
 		sockets.push_back(soc);
 		Player p = { SETY, sx, sy, 1 };
 		p.index = s;
 		p.chng = 0;
 		players.push_back(p);
+		//tf am i doing here?
+		int buf[3];
+		for (int j = 0; j < players.size(); j++) {
+			buf[0] = players[j].y;
+			buf[1] = NEWDUMMY;
+			buf[2] = players[j].x;
+			asio::write(*soc, asio::buffer(buf), ec);
+		}
 		sx += 10;
 		s++;
 		std::cout << "New player from: " << soc->remote_endpoint() << std::endl;
@@ -105,7 +115,7 @@ int main() {
 		if (iosafe.try_lock()) {
 			for (int i = 0; i < sockets.size(); i++) {
 				readInput(&players[i], sockets[i]);
-				sendChanges(players[i],sockets[i]);
+				sendChanges(&players[i],sockets[i]);
 			}
 			iosafe.unlock();
 		}

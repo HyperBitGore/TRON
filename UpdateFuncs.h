@@ -83,7 +83,7 @@ void playerUpdateMultiplayer(Entity* p, std::vector<Entity>& enemies, SDL_Surfac
 		for (int i = (*p).y; i < (*p).ly; i++) {
 			//edit.setPixelRGBA(surf, (*p).x, i, 0, 100, 255, 255);
 		}
-		if (edit.getPixel(surf, (*p).x, (*p).y - 1) != 0) {
+		if (edit.getPixelSafe(surf, (*p).x, (*p).y - 1) != 0) {
 			death(&(*p), enemies, surf, !wasd);
 		}
 		break;
@@ -92,7 +92,7 @@ void playerUpdateMultiplayer(Entity* p, std::vector<Entity>& enemies, SDL_Surfac
 		for (int i = (*p).ly; i < (*p).y; i++) {
 			//edit.setPixelRGBA(surf, (*p).x, i, 0, 100, 255, 255);
 		}
-		if (edit.getPixel(surf, (*p).x, (*p).y + (*p).h + 1) != 0) {
+		if (edit.getPixelSafe(surf, (*p).x, (*p).y + (*p).h + 1) != 0) {
 			death(&(*p), enemies, surf, !wasd);
 		}
 		break;
@@ -101,7 +101,7 @@ void playerUpdateMultiplayer(Entity* p, std::vector<Entity>& enemies, SDL_Surfac
 		for (int i = (*p).x; i < (*p).lx; i++) {
 			//edit.setPixelRGBA(surf, i, (*p).y, 0, 100, 255, 255);
 		}
-		if (edit.getPixel(surf, (*p).x - 1, (*p).y) != 0) {
+		if (edit.getPixelSafe(surf, (*p).x - 1, (*p).y) != 0) {
 			death(&(*p), enemies, surf, !wasd);
 		}
 		break;
@@ -110,7 +110,7 @@ void playerUpdateMultiplayer(Entity* p, std::vector<Entity>& enemies, SDL_Surfac
 		for (int i = (*p).lx; i < (*p).x; i++) {
 			//edit.setPixelRGBA(surf, i, (*p).y, 0, 100, 255, 255);
 		}
-		if (edit.getPixel(surf, (*p).x + (*p).w + 1, (*p).y) != 0) {
+		if (edit.getPixelSafe(surf, (*p).x + (*p).w + 1, (*p).y) != 0) {
 			death(&(*p), enemies, surf, !wasd);
 		}
 		break;
