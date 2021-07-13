@@ -5,15 +5,17 @@ const Uint8 *keys;
 int p1score = 0;
 int p2score = 0;
 asio::io_context aio;
-
-//Send this message and a sucessive packet which contains the number by
-enum messages { SETX, SETY, SETDIR, NEWDUMMY};
 std::vector<Dummy> dummies;
+
+bool greaterDummyIndex(Dummy d1, Dummy d2) {
+	return (d1.index > d2.index);
+}
+
 //Have vector of dummy players that only have draw rect in their function
 void onlineMode(asio::ip::tcp::socket *sock, Entity *p, float delta, SDL_Renderer* rend) {
-	//dummies[0].dir = (*p).dir;
 	for (int i = 0; i < dummies.size(); i++) {
 		dummyUpdate(&dummies[i], delta, rend);
+		//std::cout << dummies[i].index << " i: " << i << std::endl;
 	}
 	//Need server to be running or the connection will throw esoteric exception unless catch error code like so
 	//Use points to store needed changes and then send said changes to server and clear the points vector
@@ -29,39 +31,11 @@ void onlineMode(asio::ip::tcp::socket *sock, Entity *p, float delta, SDL_Rendere
 		sendn = (int)(*p).y;
 		m = SETY;
 	}
-	int send[2] = { m, sendn};
+	int send[4] = { m, sendn, (*p).index, (*p).dir};
 	asio::error_code ignore;
 	asio::write(*sock, asio::buffer(send), ignore);
-	int buf[3];
-	asio::error_code ecode;
-	size_t bytes = (*sock).available();
-	size_t len = asio::read(*sock, asio::buffer(buf), ecode);
-	Dummy d;
-	switch (buf[1]) {
-	case SETX:
-		dummies[buf[0]].x = buf[2];
-		break;
-	case SETY:
-		dummies[buf[0]].y = buf[2];
-		break;
-	case SETDIR:
-		dummies[buf[0]].dir = buf[2];
-		break;
-	case NEWDUMMY:
-		d.y = buf[0];
-		d.x = buf[2];
-		d.w = 1;
-		d.h = 10;
-		d.dir = 1;
-		dummies.push_back(d);
-		break;
-	}
-	if (ecode == asio::error::eof) {
-		return;
-	}
-	else if (ecode) {
-		return;
-	}
+	readPass(sock, p);
+
 }
 void startOnlineMode(asio::ip::tcp::socket *sock, Entity *p) {
 	asio::ip::tcp::endpoint end(asio::ip::address::from_string("127.0.0.1"), 13);
@@ -69,26 +43,13 @@ void startOnlineMode(asio::ip::tcp::socket *sock, Entity *p) {
 	asio::ip::tcp::resolver::results_type endpoints = resolv.resolve(end);
 	asio::error_code ec;
 	(*sock).connect(*endpoints, ec);
-	int buf[3];
-	asio::read(*sock, asio::buffer(buf), ec);
-	Dummy d;
-	if (buf[1] == NEWDUMMY) {
-		d.y = buf[0];
-		d.x = buf[2];
-		d.w = 1;
-		d.h = 10;
-		d.dir = 1;
-		dummies.push_back(d);
-	}
-	//Dummy d = {(*p).x, (*p).y, (*p).dir, (*p).w, (*p).h};
-	//dummies.push_back(d);
 	if (ec) {
 		std::cout << "Connection error: " << ec.message() << std::endl;
 		return;
 	}
 }
 
-//Add multiplayer mode
+//Finish multiplayer mode
 int main(int argc, char **argv) {
 	//SDL initilization
 	if (SDL_Init(SDL_INIT_VIDEO) > 0) {
@@ -130,7 +91,10 @@ int main(int argc, char **argv) {
 	SDL_Texture* rtext3 = SDL_CreateTextureFromSurface(rend, text);
 	text = TTF_RenderText_Solid(font, "Exit", white);
 	SDL_Texture* rtext4 = SDL_CreateTextureFromSurface(rend, text);
+	text = TTF_RenderText_Solid(font, "Online arrows", white);
+	SDL_Texture* rtext5 = SDL_CreateTextureFromSurface(rend, text);
 	int renmode = 2;
+	bool owasd = true;
 	asio::ip::tcp::socket sock(aio);
 	loadEnemies(enemies);
 	//Main game code
@@ -187,6 +151,9 @@ int main(int argc, char **argv) {
 			button.y = 301;
 			SDL_RenderFillRect(rend, &button);
 			SDL_RenderCopy(rend, rtext4, NULL, &button);
+			button.y = 351;
+			SDL_RenderFillRect(rend, &button);
+			SDL_RenderCopy(rend, rtext5, NULL, &button);
 			if (SDL_GetMouseState(&mx, &my) & SDL_BUTTON(SDL_BUTTON_LEFT)) {
 				if (mx >= 100 && mx <= 200) {
 					if (my >= 151 && my <= 201) {
@@ -198,9 +165,15 @@ int main(int argc, char **argv) {
 					else if (my >= 251 && my < 301) {
 						renmode = 4;
 						startOnlineMode(&sock, &player);
+						owasd = true;
 					}
 					else if (my >= 301 && my < 350) {
 						exitf = true;
+					}
+					else if (my >= 351 && my < 400) {
+						renmode = 4;
+						startOnlineMode(&sock, &player);
+						owasd = false;
 					}
 				}
 			}
@@ -214,7 +187,7 @@ int main(int argc, char **argv) {
 			SDL_RenderPresent(rend);
 			break;
 		case 4:
-			playerUpdateMultiplayer(&player, enemies, surf, rend, delta);
+			playerUpdateMultiplayer(&player, &sock,enemies, surf, rend, delta, owasd);
 			onlineMode(&sock, &player, delta, rend);
 
 			SDL_RenderCopy(rend, sceen, NULL, &screenm);

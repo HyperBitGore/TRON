@@ -21,13 +21,13 @@ void dummyUpdate(Dummy *p, float delta, SDL_Renderer* rend) {
 		(*p).h = 1;
 		break;
 	}
-	std::cout << "X: " << (*p).x << " Y:" << (*p).y << std::endl;
+	//std::cout << "X: " << (*p).x << " Y:" << (*p).y << std::endl;
 	SDL_Rect pal = { (*p).x, (*p).y, (*p).w, (*p).h };
 	SDL_SetRenderDrawColor(rend, 0, 0, 255, 255);
 	SDL_RenderFillRect(rend, &pal);
 }
 //Player input/path drawing
-void playerUpdateMultiplayer(Entity* p, std::vector<Entity>& enemies, SDL_Surface* surf, SDL_Renderer* rend, float delta, bool wasd = true) {
+void playerUpdateMultiplayer(Entity* p, asio::ip::tcp::socket* sock, std::vector<Entity>& enemies, SDL_Surface* surf, SDL_Renderer* rend, float delta, bool wasd) {
 	Gore::Edit edit;
 	SDL_PumpEvents();
 	if (wasd) {
@@ -74,8 +74,9 @@ void playerUpdateMultiplayer(Entity* p, std::vector<Entity>& enemies, SDL_Surfac
 			(*p).h = 1;
 		}
 	}
+	asio::error_code ignore;
 	if ((*p).x < 1 || (*p).x > 799 || (*p).y < 1 || (*p).y > 799) {
-		death(&(*p), enemies, surf, !wasd);
+		death(&(*p), enemies, surf, true);
 	}
 	switch ((*p).dir) {
 	case 1:
@@ -84,7 +85,7 @@ void playerUpdateMultiplayer(Entity* p, std::vector<Entity>& enemies, SDL_Surfac
 			//edit.setPixelRGBA(surf, (*p).x, i, 0, 100, 255, 255);
 		}
 		if (edit.getPixelSafe(surf, (*p).x, (*p).y - 1) != 0) {
-			death(&(*p), enemies, surf, !wasd);
+			death(&(*p), enemies, surf, true);
 		}
 		break;
 	case 2:
@@ -93,7 +94,7 @@ void playerUpdateMultiplayer(Entity* p, std::vector<Entity>& enemies, SDL_Surfac
 			//edit.setPixelRGBA(surf, (*p).x, i, 0, 100, 255, 255);
 		}
 		if (edit.getPixelSafe(surf, (*p).x, (*p).y + (*p).h + 1) != 0) {
-			death(&(*p), enemies, surf, !wasd);
+			death(&(*p), enemies, surf, true);
 		}
 		break;
 	case 3:
@@ -102,7 +103,7 @@ void playerUpdateMultiplayer(Entity* p, std::vector<Entity>& enemies, SDL_Surfac
 			//edit.setPixelRGBA(surf, i, (*p).y, 0, 100, 255, 255);
 		}
 		if (edit.getPixelSafe(surf, (*p).x - 1, (*p).y) != 0) {
-			death(&(*p), enemies, surf, !wasd);
+			death(&(*p), enemies, surf, true);
 		}
 		break;
 	case 4:
@@ -111,7 +112,7 @@ void playerUpdateMultiplayer(Entity* p, std::vector<Entity>& enemies, SDL_Surfac
 			//edit.setPixelRGBA(surf, i, (*p).y, 0, 100, 255, 255);
 		}
 		if (edit.getPixelSafe(surf, (*p).x + (*p).w + 1, (*p).y) != 0) {
-			death(&(*p), enemies, surf, !wasd);
+			death(&(*p), enemies, surf, true);
 		}
 		break;
 

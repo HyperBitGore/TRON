@@ -5,14 +5,13 @@
 #include <thread>
 #include <mutex>
 
-enum messages { SETX, SETY, SETDIR, NEWDUMMY, SENDDUMMIES};
+enum messages { SETX, SETY, SETDIR, NEWDUMMY};
 struct Player {
 	messages m;
 	int x;
 	int y;
 	int dir;
 	int index;
-	int chng;
 };
 std::mutex iosafe;
 std::vector<asio::ip::tcp::socket*> sockets;
@@ -20,7 +19,7 @@ std::vector<Player> players;
 bool exitf = false;
 asio::io_context io;
 void readInput(Player *p, asio::ip::tcp::socket* soc) {
-	int buf[2];
+	int buf[4];
 	asio::error_code ecode;
 	asio::read(*soc, asio::buffer(buf), ecode);
 	std::cout << "Recieved data: " << buf << " From: " << soc->remote_endpoint() << std::endl;
@@ -33,11 +32,8 @@ void readInput(Player *p, asio::ip::tcp::socket* soc) {
 		(*p).y = buf[1];
 		(*p).m = SETY;
 		break;
-	case SETDIR:
-		(*p).dir = buf[1];
-		(*p).m = SETDIR;
-		break;
 	}
+	(*p).dir = buf[3];
 	if (ecode == asio::error::eof) {
 		return;
 	}
@@ -45,31 +41,37 @@ void readInput(Player *p, asio::ip::tcp::socket* soc) {
 		return;
 	}
 }
-void sendChanges(Player *p,asio::ip::tcp::socket* soc) {
-	int buf[3];
+//fix the players moving in weird directions or not responding at all
+void sendChanges(Player *p,int index, asio::ip::tcp::socket* soc) {
+	int buf[4];
 	asio::error_code ec;
 	std::cout << "Writing: " << (*p).m << " Index: " << (*p).index << " At: " << soc->remote_endpoint() << std::endl;
-	buf[0] = (*p).index;
+	buf[0] = index;
 	buf[1] = (*p).m;
+	buf[3] = (*p).dir;
 	switch (p->m) {
 	case SETX:
 		buf[2] = (*p).x;
+		std::cout << "Wrote X: " << buf[2] << std::endl;
 		break;
 	case SETY:
 		buf[2] = (*p).y;
+		std::cout << "Wrote Y: " << buf[2] << std::endl;
+		break;
+	case SETDIR:
+		buf[2] = (*p).dir;
 		break;
 	}
-	for (auto& i : sockets) {
-		asio::write(*i, asio::buffer(buf), ec);
-	}
+	asio::write(*soc, asio::buffer(buf), ec);
 }
-void sendNewDummy(int sx, int sy, asio::ip::tcp::socket* sock) {
+void sendNewDummy(int sx, int sy, int s, asio::ip::tcp::socket* sock) {
 	std::cout << "Writing new peer to: " << sock->remote_endpoint() << std::endl;
-	int buf[3];
+	int buf[4];
 	asio::error_code ec;
 	buf[0] = sy;
 	buf[1] = NEWDUMMY;
 	buf[2] = sx;
+	buf[3] = s;
 	asio::write(*sock, asio::buffer(buf), ec);
 }
 
@@ -85,20 +87,14 @@ void listeningThread() {
 		accept.accept(*soc, ec);
 		iosafe.lock();
 		for (int i = 0; i < sockets.size(); i++) {
-			sendNewDummy(sx, sy, sockets[i]);
+			sendNewDummy(sx, sy, s, sockets[i]);
 		}
 		sockets.push_back(soc);
 		Player p = { SETY, sx, sy, 1 };
 		p.index = s;
-		p.chng = 0;
 		players.push_back(p);
-		//tf am i doing here?
-		int buf[3];
-		for (int j = 0; j < players.size(); j++) {
-			buf[0] = players[j].y;
-			buf[1] = NEWDUMMY;
-			buf[2] = players[j].x;
-			asio::write(*soc, asio::buffer(buf), ec);
+		for (int i = 0; i < players.size(); i++) {
+			sendNewDummy(players[i].x, players[i].y, players[i].index, soc);
 		}
 		sx += 10;
 		s++;
@@ -115,7 +111,9 @@ int main() {
 		if (iosafe.try_lock()) {
 			for (int i = 0; i < sockets.size(); i++) {
 				readInput(&players[i], sockets[i]);
-				sendChanges(&players[i],sockets[i]);
+				for (int j = 0; j < players.size(); j++) {
+					sendChanges(&players[j], j, sockets[i]);
+				}
 			}
 			iosafe.unlock();
 		}
