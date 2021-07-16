@@ -38,11 +38,16 @@ void onlineMode(asio::ip::tcp::socket *sock, Entity *p, float delta, SDL_Rendere
 
 }
 void startOnlineMode(asio::ip::tcp::socket *sock, Entity *p) {
-	asio::ip::tcp::endpoint end(asio::ip::address::from_string("127.0.0.1"), 13);
+	asio::error_code eg;
+	std::string ipstring;
+	std::cout << "Input IP address to connect to";
+	std::cin >> ipstring;
+	asio::ip::tcp::endpoint end(asio::ip::address::from_string(ipstring), 13);
 	asio::ip::tcp::resolver resolv(aio);
 	asio::ip::tcp::resolver::results_type endpoints = resolv.resolve(end);
 	asio::error_code ec;
 	(*sock).connect(*endpoints, ec);
+	
 	if (ec) {
 		std::cout << "Connection error: " << ec.message() << std::endl;
 		return;

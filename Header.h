@@ -90,38 +90,41 @@ void death(Entity *p, std::vector<Entity>& enemies, SDL_Surface* surf, bool p2) 
 	}
 
 }
-void readPass(asio::ip::tcp::socket* sock, Entity* p) {
+size_t readPass(asio::ip::tcp::socket* sock, Entity* p) {
 	int buf[4];
 	asio::error_code ecode;
 	size_t bytes = (*sock).available();
-	asio::read(*sock, asio::buffer(buf), ecode);
-	Dummy d;
-	std::cout << "Reading data for dummy: " << buf[0] << ":" << buf[2] << "Dir:" << buf[3] << std::endl;
-	switch (buf[1]) {
-	case NEWDUMMY:
-		d.y = buf[0];
-		d.x = buf[2];
-		d.w = 1;
-		d.h = 10;
-		d.dir = 1;
-		d.index = buf[3];
-		std::cout << "Inserting new dummmy at " << d.index << std::endl;
-		dummies.insert(dummies.begin() + d.index, d);
-		break;
-	case SETX:
-		dummies[buf[0]].dir = buf[3];
-		dummies[buf[0]].x = buf[2];
-		break;
-	case SETY:
-		dummies[buf[0]].dir = buf[3];
-		dummies[buf[0]].y = buf[2];
-		break;
+	if (bytes > 0) {
+		asio::read(*sock, asio::buffer(buf), ecode);
+		Dummy d;
+		std::cout << "Reading " << bytes << " bytes for dummy: " << buf[0] << ":" << buf[2] << "Dir:" << buf[3] << std::endl;
+		switch (buf[1]) {
+		case NEWDUMMY:
+			d.y = buf[0];
+			d.x = buf[2];
+			d.w = 1;
+			d.h = 10;
+			d.dir = 1;
+			d.index = buf[3];
+			std::cout << "Inserting new dummmy at " << d.index << std::endl;
+			dummies.insert(dummies.begin() + d.index, d);
+			break;
+		case SETX:
+			dummies[buf[0]].dir = buf[3];
+			dummies[buf[0]].x = buf[2];
+			break;
+		case SETY:
+			dummies[buf[0]].dir = buf[3];
+			dummies[buf[0]].y = buf[2];
+			break;
+		}
+		if (ecode == asio::error::eof) {
+			return 0;
+		}
+		else if (ecode) {
+			return 0;
+		}
 	}
-	if (ecode == asio::error::eof) {
-		return;
-	}
-	else if (ecode) {
-		return;
-	}
+	return bytes;
 }
 

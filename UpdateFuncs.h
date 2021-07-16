@@ -74,7 +74,6 @@ void playerUpdateMultiplayer(Entity* p, asio::ip::tcp::socket* sock, std::vector
 			(*p).h = 1;
 		}
 	}
-	asio::error_code ignore;
 	if ((*p).x < 1 || (*p).x > 799 || (*p).y < 1 || (*p).y > 799) {
 		death(&(*p), enemies, surf, true);
 	}

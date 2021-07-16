@@ -12,6 +12,7 @@ struct Player {
 	int y;
 	int dir;
 	int index;
+	bool write;
 };
 std::mutex iosafe;
 std::vector<asio::ip::tcp::socket*> sockets;
@@ -20,49 +21,54 @@ bool exitf = false;
 asio::io_context io;
 void readInput(Player *p, asio::ip::tcp::socket* soc) {
 	int buf[4];
+	size_t bytes = (*soc).available();
+	(*p).write = false;
 	asio::error_code ecode;
-	asio::read(*soc, asio::buffer(buf), ecode);
-	std::cout << "Recieved data: " << buf << " From: " << soc->remote_endpoint() << std::endl;
-	switch (buf[0]) {
-	case SETX:
-		(*p).x = buf[1];
-		(*p).m = SETX;
-		break;
-	case SETY:
-		(*p).y = buf[1];
-		(*p).m = SETY;
-		break;
-	}
-	(*p).dir = buf[3];
-	if (ecode == asio::error::eof) {
-		return;
-	}
-	else if (ecode) {
-		return;
+	if (bytes > 0) {
+		asio::read(*soc, asio::buffer(buf), ecode);
+		//std::cout << "Recieved data: " << buf << " From: " << soc->remote_endpoint() << std::endl;
+		switch (buf[0]) {
+		case SETX:
+			(*p).x = buf[1];
+			(*p).m = SETX;
+			break;
+		case SETY:
+			(*p).y = buf[1];
+			(*p).m = SETY;
+			break;
+		}
+		(*p).dir = buf[3];
+		(*p).write = true;
+		if (ecode == asio::error::eof) {
+			return;
+		}
+		else if (ecode) {
+			return;
+		}
 	}
 }
 //fix the players moving in weird directions or not responding at all
 void sendChanges(Player *p,int index, asio::ip::tcp::socket* soc) {
 	int buf[4];
 	asio::error_code ec;
-	std::cout << "Writing: " << (*p).m << " Index: " << (*p).index << " At: " << soc->remote_endpoint() << std::endl;
-	buf[0] = index;
-	buf[1] = (*p).m;
-	buf[3] = (*p).dir;
-	switch (p->m) {
-	case SETX:
-		buf[2] = (*p).x;
-		std::cout << "Wrote X: " << buf[2] << std::endl;
-		break;
-	case SETY:
-		buf[2] = (*p).y;
-		std::cout << "Wrote Y: " << buf[2] << std::endl;
-		break;
-	case SETDIR:
-		buf[2] = (*p).dir;
-		break;
+	//std::cout << "Writing: " << (*p).m << " Index: " << (*p).index << " At: " << soc->remote_endpoint() << std::endl;
+	if ((*p).write) {
+		buf[0] = index;
+		buf[1] = (*p).m;
+		buf[3] = (*p).dir;
+		switch (p->m) {
+		case SETX:
+			buf[2] = (*p).x;
+			//std::cout << "Wrote X: " << buf[2] << std::endl;
+			break;
+		case SETY:
+			buf[2] = (*p).y;
+			//std::cout << "Wrote Y: " << buf[2] << std::endl;
+			break;
+		}
+		asio::write(*soc, asio::buffer(buf), ec);
+		(*p).write = false;
 	}
-	asio::write(*soc, asio::buffer(buf), ec);
 }
 void sendNewDummy(int sx, int sy, int s, asio::ip::tcp::socket* sock) {
 	std::cout << "Writing new peer to: " << sock->remote_endpoint() << std::endl;
@@ -92,6 +98,7 @@ void listeningThread() {
 		sockets.push_back(soc);
 		Player p = { SETY, sx, sy, 1 };
 		p.index = s;
+		p.write = true;
 		players.push_back(p);
 		for (int i = 0; i < players.size(); i++) {
 			sendNewDummy(players[i].x, players[i].y, players[i].index, soc);
