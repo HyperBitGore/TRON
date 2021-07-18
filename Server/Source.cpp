@@ -5,7 +5,7 @@
 #include <thread>
 #include <mutex>
 
-enum messages { SETX, SETY, SETDIR, NEWDUMMY};
+enum messages { SETX, SETY, SETDIR, NEWDUMMY, RECIEVED};
 struct Player {
 	messages m;
 	int x;
@@ -29,10 +29,18 @@ void readInput(Player *p, asio::ip::tcp::socket* soc) {
 		//std::cout << "Recieved data: " << buf << " From: " << soc->remote_endpoint() << std::endl;
 		switch (buf[0]) {
 		case SETX:
+			if ((*p).x == buf[1]) {
+				(*p).write = false;
+				return;
+			}
 			(*p).x = buf[1];
 			(*p).m = SETX;
 			break;
 		case SETY:
+			if ((*p).y == buf[1]) {
+				(*p).write = false;
+				return;
+			}
 			(*p).y = buf[1];
 			(*p).m = SETY;
 			break;
@@ -47,27 +55,53 @@ void readInput(Player *p, asio::ip::tcp::socket* soc) {
 		}
 	}
 }
-//fix the players moving in weird directions or not responding at all
-void sendChanges(Player *p,int index, asio::ip::tcp::socket* soc) {
-	int buf[4];
+//too much data being written, figure out why
+void sendChanges(Player *p, asio::ip::tcp::socket* soc) {
 	asio::error_code ec;
-	//std::cout << "Writing: " << (*p).m << " Index: " << (*p).index << " At: " << soc->remote_endpoint() << std::endl;
-	if ((*p).write) {
-		buf[0] = index;
-		buf[1] = (*p).m;
-		buf[3] = (*p).dir;
-		switch (p->m) {
-		case SETX:
-			buf[2] = (*p).x;
-			//std::cout << "Wrote X: " << buf[2] << std::endl;
-			break;
-		case SETY:
-			buf[2] = (*p).y;
-			//std::cout << "Wrote Y: " << buf[2] << std::endl;
-			break;
+	/*for (auto& i : players) {
+		if (i.write) {
+			int buf[4];
+			buf[0] = i.index;
+			buf[1] = i.m;
+			buf[3] = i.dir;
+			switch (i.m) {
+			case SETX:
+				buf[2] = i.x;
+				//std::cout << "Wrote X: " << buf[2] << std::endl;
+				break;
+			case SETY:
+				buf[2] = i.y;
+				//std::cout << "Wrote Y: " << buf[2] << std::endl;
+				break;
+			}
+			asio::write(*soc, asio::buffer(buf), ec);
 		}
-		asio::write(*soc, asio::buffer(buf), ec);
-		(*p).write = false;
+	}*/
+	if ((*p).write) {
+		//std::cout << "Writing: " << (*p).m << " Index: " << (*p).index << " At: " << soc->remote_endpoint() << std::endl;
+		for (auto& i : sockets) {
+				int buf[4];
+				buf[0] = (*p).index;
+				buf[1] = (*p).m;
+				buf[3] = (*p).dir;
+				switch ((*p).m) {
+				case SETX:
+					buf[2] = (*p).x;
+					//std::cout << "Wrote X: " << buf[2] << std::endl;
+					break;
+				case SETY:
+					buf[2] = (*p).y;
+					//std::cout << "Wrote Y: " << buf[2] << std::endl;
+					break;
+				}
+				asio::write(*i, asio::buffer(buf), ec);
+				int readb[1];
+				asio::read(*i, asio::buffer(readb), ec);
+				if (readb[0] == RECIEVED) {
+					std::cout << "Data recieved by socket" << std::endl;
+				}
+
+		}
 	}
 }
 void sendNewDummy(int sx, int sy, int s, asio::ip::tcp::socket* sock) {
@@ -106,6 +140,7 @@ void listeningThread() {
 		sx += 10;
 		s++;
 		std::cout << "New player from: " << soc->remote_endpoint() << std::endl;
+		std::cout << "Players size: " << players.size() << std::endl;
 		iosafe.unlock();
 	}
 }
@@ -116,11 +151,9 @@ int main() {
 	std::thread listen(listeningThread);
 	while (!exitf) {
 		if (iosafe.try_lock()) {
-			for (int i = 0; i < sockets.size(); i++) {
+			for (int i = 0; i < players.size(); i++) {
 				readInput(&players[i], sockets[i]);
-				for (int j = 0; j < players.size(); j++) {
-					sendChanges(&players[j], j, sockets[i]);
-				}
+				sendChanges(&players[i], sockets[i]);
 			}
 			iosafe.unlock();
 		}

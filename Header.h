@@ -13,7 +13,7 @@ extern const Uint8 *keys;
 extern int p1score;
 extern int p2score;
 //Send this message and a sucessive packet which contains the number by
-enum messages { SETX, SETY, SETDIR, NEWDUMMY };
+enum messages { SETX, SETY, SETDIR, NEWDUMMY, RECIEVED};
 struct Dummy {
 	int x;
 	int y;
@@ -118,6 +118,10 @@ size_t readPass(asio::ip::tcp::socket* sock, Entity* p) {
 			dummies[buf[0]].y = buf[2];
 			break;
 		}
+		int sendt[1];
+		sendt[0] = RECIEVED;
+		asio::error_code ec;
+		asio::write(*sock, asio::buffer(sendt), ec);
 		if (ecode == asio::error::eof) {
 			return 0;
 		}
