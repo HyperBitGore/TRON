@@ -98,7 +98,7 @@ void sendChanges(Player *p, asio::ip::tcp::socket* soc) {
 				int readb[1];
 				asio::read(*i, asio::buffer(readb), ec);
 				if (readb[0] == RECIEVED) {
-					std::cout << "Data recieved by socket" << std::endl;
+					
 				}
 
 		}

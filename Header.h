@@ -94,6 +94,7 @@ size_t readPass(asio::ip::tcp::socket* sock, Entity* p) {
 	int buf[4];
 	asio::error_code ecode;
 	size_t bytes = (*sock).available();
+	std::cout << bytes / 16 << std::endl;
 	if (bytes > 0) {
 		asio::read(*sock, asio::buffer(buf), ecode);
 		Dummy d;

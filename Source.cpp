@@ -34,6 +34,11 @@ void onlineMode(asio::ip::tcp::socket *sock, Entity *p, float delta, SDL_Rendere
 	int send[4] = { m, sendn, (*p).index, (*p).dir};
 	asio::error_code ignore;
 	asio::write(*sock, asio::buffer(send), ignore);
+	if ((*sock).available() > 16) {
+		for (int i = 0; i < (*sock).available() / 16; i++) {
+			readPass(sock, p);
+		}
+	}
 	readPass(sock, p);
 
 }
