@@ -21,26 +21,22 @@ void onlineMode(asio::ip::tcp::socket *sock, Entity *p, float delta, SDL_Rendere
 	//Use points to store needed changes and then send said changes to server and clear the points vector
 	//Have an online player update function that communicates with this function
 	//Send what the packet is and have the packet contain the data of the coord
-	messages m = SETX;
-	int sendn = 0;
-	if ((*p).dir > 2) {
-		sendn = (int)(*p).x;
-		m = SETX;
-	}
-	else {
-		sendn = (int)(*p).y;
-		m = SETY;
-	}
-	int send[4] = { m, sendn, (*p).index, (*p).dir};
+	int send[5] = { SETCOORDS, (*p).x, (*p).index, (*p).dir, (*p).y};
 	asio::error_code ignore;
 	asio::write(*sock, asio::buffer(send), ignore);
-	if ((*sock).available() > 16) {
-		for (int i = 0; i < (*sock).available() / 16; i++) {
+	while ((*sock).available() > 0) {
+		readPass(sock, p);
+	}
+	int sendt[1];
+	sendt[0] = RECIEVED;
+	asio::error_code ec;
+	asio::write(*sock, asio::buffer(sendt), ec);
+	/*if ((*sock).available() > 20) {
+		for (int i = 0; i < (*sock).available() / 20; i++) {
 			readPass(sock, p);
 		}
 	}
-	readPass(sock, p);
-
+	readPass(sock, p);*/
 }
 void startOnlineMode(asio::ip::tcp::socket *sock, Entity *p) {
 	asio::error_code eg;

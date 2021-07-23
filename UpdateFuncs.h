@@ -84,7 +84,7 @@ void playerUpdateMultiplayer(Entity* p, asio::ip::tcp::socket* sock, std::vector
 			//edit.setPixelRGBA(surf, (*p).x, i, 0, 100, 255, 255);
 		}
 		if (edit.getPixelSafe(surf, (*p).x, (*p).y - 1) != 0) {
-			death(&(*p), enemies, surf, true);
+			multiDeath(p, surf, sock);	
 		}
 		break;
 	case 2:
@@ -93,7 +93,7 @@ void playerUpdateMultiplayer(Entity* p, asio::ip::tcp::socket* sock, std::vector
 			//edit.setPixelRGBA(surf, (*p).x, i, 0, 100, 255, 255);
 		}
 		if (edit.getPixelSafe(surf, (*p).x, (*p).y + (*p).h + 1) != 0) {
-			death(&(*p), enemies, surf, true);
+			multiDeath(p, surf, sock);
 		}
 		break;
 	case 3:
@@ -102,7 +102,7 @@ void playerUpdateMultiplayer(Entity* p, asio::ip::tcp::socket* sock, std::vector
 			//edit.setPixelRGBA(surf, i, (*p).y, 0, 100, 255, 255);
 		}
 		if (edit.getPixelSafe(surf, (*p).x - 1, (*p).y) != 0) {
-			death(&(*p), enemies, surf, true);
+			multiDeath(p, surf, sock);
 		}
 		break;
 	case 4:
@@ -111,7 +111,7 @@ void playerUpdateMultiplayer(Entity* p, asio::ip::tcp::socket* sock, std::vector
 			//edit.setPixelRGBA(surf, i, (*p).y, 0, 100, 255, 255);
 		}
 		if (edit.getPixelSafe(surf, (*p).x + (*p).w + 1, (*p).y) != 0) {
-			death(&(*p), enemies, surf, true);
+			multiDeath(p, surf, sock);
 		}
 		break;
 

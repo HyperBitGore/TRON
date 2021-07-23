@@ -13,7 +13,7 @@ extern const Uint8 *keys;
 extern int p1score;
 extern int p2score;
 //Send this message and a sucessive packet which contains the number by
-enum messages { SETX, SETY, SETDIR, NEWDUMMY, RECIEVED};
+enum messages { SETDIR, NEWDUMMY, RECIEVED, CLEAR, SETCOORDS};
 struct Dummy {
 	int x;
 	int y;
@@ -90,16 +90,33 @@ void death(Entity *p, std::vector<Entity>& enemies, SDL_Surface* surf, bool p2) 
 	}
 
 }
+void multiDeath(Entity* p, SDL_Surface* surf, asio::ip::tcp::socket* sock) {
+	Gore::Edit edit;
+	edit.clearSurface(surf, 800, 800);
+	int buf[5];
+	buf[0] = CLEAR;
+	buf[1] = 0;
+	buf[2] = 0;
+	buf[3] = 0;
+	buf[4] = 0;
+	asio::error_code ec;
+	asio::write(*sock, asio::buffer(buf), ec);
+}
+
 size_t readPass(asio::ip::tcp::socket* sock, Entity* p) {
-	int buf[4];
+	int buf[5];
 	asio::error_code ecode;
 	size_t bytes = (*sock).available();
-	std::cout << bytes / 16 << std::endl;
+	std::cout << bytes / 20 << std::endl;
 	if (bytes > 0) {
 		asio::read(*sock, asio::buffer(buf), ecode);
 		Dummy d;
 		std::cout << "Reading " << bytes << " bytes for dummy: " << buf[0] << ":" << buf[2] << "Dir:" << buf[3] << std::endl;
 		switch (buf[1]) {
+		case CLEAR:
+			dummies[buf[0]].x = buf[2];
+			dummies[buf[0]].y = buf[3];
+			break;
 		case NEWDUMMY:
 			d.y = buf[0];
 			d.x = buf[2];
@@ -110,19 +127,12 @@ size_t readPass(asio::ip::tcp::socket* sock, Entity* p) {
 			std::cout << "Inserting new dummmy at " << d.index << std::endl;
 			dummies.insert(dummies.begin() + d.index, d);
 			break;
-		case SETX:
-			dummies[buf[0]].dir = buf[3];
+		case SETCOORDS:
 			dummies[buf[0]].x = buf[2];
-			break;
-		case SETY:
+			dummies[buf[0]].y = buf[4];
 			dummies[buf[0]].dir = buf[3];
-			dummies[buf[0]].y = buf[2];
 			break;
 		}
-		int sendt[1];
-		sendt[0] = RECIEVED;
-		asio::error_code ec;
-		asio::write(*sock, asio::buffer(sendt), ec);
 		if (ecode == asio::error::eof) {
 			return 0;
 		}
