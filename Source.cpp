@@ -7,30 +7,33 @@ int p2score = 0;
 asio::io_context aio;
 std::vector<Dummy> dummies;
 
-bool greaterDummyIndex(Dummy d1, Dummy d2) {
-	return (d1.index > d2.index);
-}
-
-//Have vector of dummy players that only have draw rect in their function
-void onlineMode(asio::ip::tcp::socket *sock, Entity *p, float delta, SDL_Renderer* rend) {
+//Fix multiplayer death function and pretty much finished, besides improving networking to work faster
+void onlineMode(asio::ip::tcp::socket *sock, Entity *p, float delta, SDL_Renderer* rend, SDL_Surface* surf) {
 	for (int i = 0; i < dummies.size(); i++) {
-		dummyUpdate(&dummies[i], delta, rend);
+		dummyUpdate(&dummies[i], delta, rend, surf);
 		//std::cout << dummies[i].index << " i: " << i << std::endl;
+		//std::cout << dummies[i].x << " : " << dummies[i].y << std::endl;
 	}
 	//Need server to be running or the connection will throw esoteric exception unless catch error code like so
 	//Use points to store needed changes and then send said changes to server and clear the points vector
 	//Have an online player update function that communicates with this function
 	//Send what the packet is and have the packet contain the data of the coord
-	int send[5] = { SETCOORDS, (*p).x, (*p).index, (*p).dir, (*p).y};
+	int send[5];
+	send[0] = SETCOORDS;
+	send[1] = (*p).x;
+	send[2] = (*p).index;
+	send[3] = (*p).dir;
+	send[4] = (*p).y;
 	asio::error_code ignore;
 	asio::write(*sock, asio::buffer(send), ignore);
 	while ((*sock).available() > 0) {
+		std::cout << "Reading: " << (*sock).available() << std::endl;
 		readPass(sock, p);
 	}
 	int sendt[1];
 	sendt[0] = RECIEVED;
-	asio::error_code ec;
-	asio::write(*sock, asio::buffer(sendt), ec);
+	asio::error_code gc;
+	asio::write(*sock, asio::buffer(sendt), gc);
 	/*if ((*sock).available() > 20) {
 		for (int i = 0; i < (*sock).available() / 20; i++) {
 			readPass(sock, p);
@@ -48,7 +51,9 @@ void startOnlineMode(asio::ip::tcp::socket *sock, Entity *p) {
 	asio::ip::tcp::resolver::results_type endpoints = resolv.resolve(end);
 	asio::error_code ec;
 	(*sock).connect(*endpoints, ec);
-	
+	int buf[1];
+	asio::read(*sock, asio::buffer(buf), ec);
+	(*p).index = buf[0];
 	if (ec) {
 		std::cout << "Connection error: " << ec.message() << std::endl;
 		return;
@@ -77,6 +82,7 @@ int main(int argc, char **argv) {
 	player.resety = 400;
 	player.lx = player.x;
 	player.ly = player.y;
+	player.clear = false;
 	Entity p2 = { 300, 400, 1, 10, 1 };
 	p2.lx = p2.x;
 	p2.ly = p2.y;
@@ -194,7 +200,7 @@ int main(int argc, char **argv) {
 			break;
 		case 4:
 			playerUpdateMultiplayer(&player, &sock,enemies, surf, rend, delta, owasd);
-			onlineMode(&sock, &player, delta, rend);
+			onlineMode(&sock, &player, delta, rend, surf);
 
 			SDL_RenderCopy(rend, sceen, NULL, &screenm);
 			SDL_RenderPresent(rend);

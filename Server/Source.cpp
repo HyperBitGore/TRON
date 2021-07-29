@@ -15,32 +15,45 @@ struct Player {
 	bool write;
 	int sx; 
 	int sy;
+	int writetime;
+	bool del;
 };
 std::mutex iosafe;
 std::vector<asio::ip::tcp::socket*> sockets;
 std::vector<Player> players;
 bool exitf = false;
-bool clear = false;
+bool resett = false;
+void sendReset();
 asio::io_context io;
 void readInput(Player *p, asio::ip::tcp::socket* soc) {
 	int buf[5];
 	size_t bytes = (*soc).available();
 	(*p).write = false;
 	asio::error_code ecode;
+	(*p).writetime++;
+	if ((*p).writetime > 200000) {
+		std::cout << "Terminating socket connection at " << soc->remote_endpoint() << std::endl;
+		(*p).del = true;
+	}
 	if (bytes > 0) {
 		asio::read(*soc, asio::buffer(buf), ecode);
-		//std::cout << "Recieved data: " << buf << " From: " << soc->remote_endpoint() << std::endl;
 		switch (buf[0]) {
 		case SETCOORDS:
 			(*p).x = buf[1];
 			(*p).y = buf[4];
 			(*p).m = SETCOORDS;
+			(*p).writetime = 0;
+			(*p).dir = buf[3];
 			break;
 		case CLEAR:
-			clear = true;
+			//(*p).x = buf[1];
+			//(*p).y = buf[4];
+			//(*p).m = SETCOORDS;
+			(*p).writetime = 0;
+			//(*p).dir = buf[3];
+			resett = true;
 			break;
 		}
-		(*p).dir = buf[3];
 		(*p).write = true;
 		if (ecode == asio::error::eof) {
 			return;
@@ -51,7 +64,7 @@ void readInput(Player *p, asio::ip::tcp::socket* soc) {
 	}
 }
 //too much data being written, figure out why
-void sendChanges(Player *p, asio::ip::tcp::socket* soc) {
+void sendChanges(asio::ip::tcp::socket* soc) {
 	asio::error_code ec;
 	for (auto& i : players) {
 		if (i.write) {
@@ -75,36 +88,36 @@ void sendChanges(Player *p, asio::ip::tcp::socket* soc) {
 	}
 }
 void sendReset(){
-	clear = false;
-	int j = 0;
-	for (auto& i : sockets) {
-		int buf[5];
-		buf[0] = j;
-		buf[1] = CLEAR;
-		buf[2] = players[j].sx;
-		buf[3] = players[j].sy;
-		buf[4] = 0;
-		asio::error_code ec;
-		asio::write(*i, asio::buffer(buf), ec);
-		j++;
+	if (resett) {
+		for (auto& i : players) {
+			i.m = SETCOORDS;
+			i.x = i.sx;
+			i.y = i.sy;
+			i.dir = 1;
+			i.write = true;
+		}
+		for (auto& i : sockets) {
+			sendChanges(i);
+		}
+		std::cout << "Sent clear call" << std::endl;
+		resett = false;
 	}
 }
 void sendNewDummy(int sx, int sy, int s, int sdir, asio::ip::tcp::socket* sock) {
 	std::cout << "Writing new peer to: " << sock->remote_endpoint() << std::endl;
 	int buf[5];
 	asio::error_code ec;
-	buf[0] = sy;
+	buf[0] = s;
 	buf[1] = NEWDUMMY;
 	buf[2] = sx;
-	buf[3] = s;
-	buf[4] = sdir;
+	buf[3] = sdir;
+	buf[4] = sy;
 	asio::write(*sock, asio::buffer(buf), ec);
 }
 
 void listeningThread() {
-	int sx = 0;
+	int sx = 20;
 	int sy = 400;
-	int s = 0;
 	while (!exitf) {
 		asio::ip::tcp::acceptor accept(io, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), 13));
 		asio::ip::tcp::socket* soc = new asio::ip::tcp::socket(io);
@@ -112,21 +125,25 @@ void listeningThread() {
 		accept.listen();
 		accept.accept(*soc, ec);
 		iosafe.lock();
+		int buf[1];
+		buf[0] = sockets.size();
+		asio::write(*soc, asio::buffer(buf), ec);
 		for (int i = 0; i < sockets.size(); i++) {
-			sendNewDummy(sx, sy, s, 1, sockets[i]);
+			sendNewDummy(sx, sy, sockets.size(), 1, sockets[i]);
 		}
 		sockets.push_back(soc);
 		Player p = { SETCOORDS, sx, sy, 1 };
-		p.index = s;
+		p.index = players.size();
 		p.write = true;
 		p.sx = p.x;
 		p.sy = p.y;
+		p.writetime = 0;
+		p.del = false;
 		players.push_back(p);
-		for (int i = 0; i < players.size(); i++) {
-			sendNewDummy(players[i].x, players[i].y, players[i].index, 1, soc);
+		for (auto& i : players) {
+			sendNewDummy(i.x, i.y, i.index, 1, soc);
 		}
 		sx += 10;
-		s++;
 		std::cout << "New player from: " << soc->remote_endpoint() << std::endl;
 		std::cout << "Players size: " << players.size() << std::endl;
 		iosafe.unlock();
@@ -139,15 +156,18 @@ int main() {
 	std::thread listen(listeningThread);
 	while (!exitf) {
 		if (iosafe.try_lock()) {
-			if (!clear) {
-				for (int i = 0; i < players.size(); i++) {
-					readInput(&players[i], sockets[i]);
-					sendChanges(&players[i], sockets[i]);
+			for (int i = 0; i < players.size(); i++) {
+				readInput(&players[i], sockets[i]);
+				sendChanges(sockets[i]);
+				if (players[i].del) {
+					std::cout << "Deleting socket connection at " << sockets[i]->remote_endpoint() << std::endl;
+					players.erase(players.begin() + i);
+					sockets[i]->close();
+					delete sockets[i];
+					sockets.erase(sockets.begin() + i);
 				}
 			}
-			else {
-				sendReset();
-			}
+			sendReset();
 			iosafe.unlock();
 		}
 	}

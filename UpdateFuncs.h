@@ -2,26 +2,40 @@
 #include "Header.h"
 
 //Don't update dummy x and y client side, get x and y changes from server
-void dummyUpdate(Dummy *p, float delta, SDL_Renderer* rend) {
+void dummyUpdate(Dummy *p, float delta, SDL_Renderer* rend, SDL_Surface* surf) {
+	Gore::Edit edit;
 	switch ((*p).dir) {
 	case 1:
+		for (int i = (*p).y; i < (*p).ly; i++) {
+			//edit.setPixelRGBASafe(surf, (*p).x, i, 0, 100, 255, 255, 800, 800);
+		}
 		(*p).w = 1;
 		(*p).h = 10;
 		break;
 	case 2:
+		for (int i = (*p).ly; i < (*p).y; i++) {
+			//edit.setPixelRGBASafe(surf, (*p).x, i, 0, 100, 255, 255, 800, 800);
+		}
 		(*p).w = 1;
 		(*p).h = 10;
 		break;
 	case 3:
+		for (int i = (*p).x; i < (*p).lx; i++) {
+			//edit.setPixelRGBASafe(surf, i, (*p).y, 0, 100, 255, 255, 800, 800);
+		}
 		(*p).w = 10;
 		(*p).h = 1;
 		break;
 	case 4:
+		for (int i = (*p).lx; i < (*p).x; i++) {
+			//edit.setPixelRGBASafe(surf, i, (*p).y, 0, 100, 255, 255, 800, 800);
+		}
 		(*p).w = 10;
 		(*p).h = 1;
 		break;
 	}
-	//std::cout << "X: " << (*p).x << " Y:" << (*p).y << std::endl;
+	(*p).lx = (*p).x;
+	(*p).ly = (*p).y;
 	SDL_Rect pal = { (*p).x, (*p).y, (*p).w, (*p).h };
 	SDL_SetRenderDrawColor(rend, 0, 0, 255, 255);
 	SDL_RenderFillRect(rend, &pal);
@@ -74,48 +88,39 @@ void playerUpdateMultiplayer(Entity* p, asio::ip::tcp::socket* sock, std::vector
 			(*p).h = 1;
 		}
 	}
+	//Fix multiplayer death being called continously even when inside bounds
 	if ((*p).x < 1 || (*p).x > 799 || (*p).y < 1 || (*p).y > 799) {
-		death(&(*p), enemies, surf, true);
+		multiDeath(p, surf, sock);
+		//death(&(*p), enemies, surf, !wasd);
 	}
 	switch ((*p).dir) {
 	case 1:
 		(*p).y -= (float)250 * delta;
-		for (int i = (*p).y; i < (*p).ly; i++) {
-			//edit.setPixelRGBA(surf, (*p).x, i, 0, 100, 255, 255);
-		}
 		if (edit.getPixelSafe(surf, (*p).x, (*p).y - 1) != 0) {
 			multiDeath(p, surf, sock);	
 		}
 		break;
 	case 2:
 		(*p).y += (float)250 * delta;
-		for (int i = (*p).ly; i < (*p).y; i++) {
-			//edit.setPixelRGBA(surf, (*p).x, i, 0, 100, 255, 255);
-		}
 		if (edit.getPixelSafe(surf, (*p).x, (*p).y + (*p).h + 1) != 0) {
 			multiDeath(p, surf, sock);
 		}
 		break;
 	case 3:
 		(*p).x -= (float)250 * delta;
-		for (int i = (*p).x; i < (*p).lx; i++) {
-			//edit.setPixelRGBA(surf, i, (*p).y, 0, 100, 255, 255);
-		}
 		if (edit.getPixelSafe(surf, (*p).x - 1, (*p).y) != 0) {
 			multiDeath(p, surf, sock);
 		}
 		break;
 	case 4:
 		(*p).x += (float)250 * delta;
-		for (int i = (*p).lx; i < (*p).x; i++) {
-			//edit.setPixelRGBA(surf, i, (*p).y, 0, 100, 255, 255);
-		}
 		if (edit.getPixelSafe(surf, (*p).x + (*p).w + 1, (*p).y) != 0) {
 			multiDeath(p, surf, sock);
 		}
 		break;
 
 	}
+	std::cout << "Player X: " << (*p).x << " Player Y: " << (*p).y << std::endl;
 	(*p).ly = (*p).y;
 	(*p).lx = (*p).x;
 }
