@@ -4,8 +4,8 @@
 #include <vector>
 #include <thread>
 #include <mutex>
-
-enum messages { SETDIR, NEWDUMMY, RECIEVED, CLEAR, SETCOORDS};
+//Maybe just use clear again and just write to all sockets clear
+enum messages { NEWDUMMY, RECIEVED, SETCOORDS, CLEAR};
 struct Player {
 	messages m;
 	int x;
@@ -46,11 +46,11 @@ void readInput(Player *p, asio::ip::tcp::socket* soc) {
 			(*p).dir = buf[3];
 			break;
 		case CLEAR:
-			//(*p).x = buf[1];
-			//(*p).y = buf[4];
-			//(*p).m = SETCOORDS;
+			(*p).x = buf[1];
+			(*p).y = buf[4];
+			(*p).m = CLEAR;
 			(*p).writetime = 0;
-			//(*p).dir = buf[3];
+			(*p).dir = buf[3];
 			resett = true;
 			break;
 		}
@@ -76,6 +76,11 @@ void sendChanges(asio::ip::tcp::socket* soc) {
 			case SETCOORDS:
 				buf[2] = i.x;
 				buf[4] = i.y;
+				//std::cout << "Sending set coords X: " << i.x << " Y:" << i.y << std::endl;
+				break;
+			case CLEAR:
+				buf[2] = i.x;
+				buf[4] = i.y;
 				break;
 			}
 			asio::write(*soc, asio::buffer(buf), ec);
@@ -88,20 +93,13 @@ void sendChanges(asio::ip::tcp::socket* soc) {
 	}
 }
 void sendReset(){
-	if (resett) {
-		for (auto& i : players) {
-			i.m = SETCOORDS;
-			i.x = i.sx;
-			i.y = i.sy;
-			i.dir = 1;
-			i.write = true;
-		}
-		for (auto& i : sockets) {
-			sendChanges(i);
-		}
-		std::cout << "Sent clear call" << std::endl;
-		resett = false;
+	for (auto& i : players) {
+		i.x = i.sx;
+		i.y = i.sy;
+		i.m = CLEAR;
+		i.dir = 1;
 	}
+	std::cout << "Sent clear call" << std::endl;
 }
 void sendNewDummy(int sx, int sy, int s, int sdir, asio::ip::tcp::socket* sock) {
 	std::cout << "Writing new peer to: " << sock->remote_endpoint() << std::endl;
@@ -158,6 +156,10 @@ int main() {
 		if (iosafe.try_lock()) {
 			for (int i = 0; i < players.size(); i++) {
 				readInput(&players[i], sockets[i]);
+				if (resett) {
+					sendReset();
+					resett = false;
+				}
 				sendChanges(sockets[i]);
 				if (players[i].del) {
 					std::cout << "Deleting socket connection at " << sockets[i]->remote_endpoint() << std::endl;
@@ -167,7 +169,6 @@ int main() {
 					sockets.erase(sockets.begin() + i);
 				}
 			}
-			sendReset();
 			iosafe.unlock();
 		}
 	}

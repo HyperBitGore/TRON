@@ -89,33 +89,35 @@ void playerUpdateMultiplayer(Entity* p, asio::ip::tcp::socket* sock, std::vector
 		}
 	}
 	//Fix multiplayer death being called continously even when inside bounds
-	if ((*p).x < 1 || (*p).x > 799 || (*p).y < 1 || (*p).y > 799) {
+	if ((*p).x <= 0 || (*p).x >= 800 || (*p).y <= 0 || (*p).y >= 800) {
+		std::cout << "Player out of bounds" << std::endl;
 		multiDeath(p, surf, sock);
+		return;
 		//death(&(*p), enemies, surf, !wasd);
 	}
 	switch ((*p).dir) {
 	case 1:
 		(*p).y -= (float)250 * delta;
 		if (edit.getPixelSafe(surf, (*p).x, (*p).y - 1) != 0) {
-			multiDeath(p, surf, sock);	
+			death(&(*p), enemies, surf, !wasd);
 		}
 		break;
 	case 2:
 		(*p).y += (float)250 * delta;
 		if (edit.getPixelSafe(surf, (*p).x, (*p).y + (*p).h + 1) != 0) {
-			multiDeath(p, surf, sock);
+			death(&(*p), enemies, surf, !wasd);
 		}
 		break;
 	case 3:
 		(*p).x -= (float)250 * delta;
 		if (edit.getPixelSafe(surf, (*p).x - 1, (*p).y) != 0) {
-			multiDeath(p, surf, sock);
+			death(&(*p), enemies, surf, !wasd);
 		}
 		break;
 	case 4:
 		(*p).x += (float)250 * delta;
 		if (edit.getPixelSafe(surf, (*p).x + (*p).w + 1, (*p).y) != 0) {
-			multiDeath(p, surf, sock);
+			death(&(*p), enemies, surf, !wasd);
 		}
 		break;
 

@@ -6,14 +6,12 @@
 #include <string.h>
 #define ASIO_STANDALONE
 #include <asio.hpp>
-//#include <asio/ts/buffer.hpp>
-//#include <asio/ts/internet.hpp>
-//switch to visual studio 2019
+#include <asio/ts/buffer.hpp>
+#include <asio/ts/internet.hpp>
 extern const Uint8 *keys;
 extern int p1score;
 extern int p2score;
-//Send this message and a sucessive packet which contains the number by
-enum messages { SETDIR, NEWDUMMY, RECIEVED, CLEAR, SETCOORDS};
+enum messages { NEWDUMMY, RECIEVED, SETCOORDS, CLEAR };
 struct Dummy {
 	int x;
 	int y;
@@ -94,23 +92,41 @@ void death(Entity *p, std::vector<Entity>& enemies, SDL_Surface* surf, bool p2) 
 
 }
 void multiDeath(Entity* p, SDL_Surface* surf, asio::ip::tcp::socket* sock) {
-	Gore::Edit edit;
-	edit.clearSurface(surf, 800, 800);
-	//(*p).clear = true;
+	//Gore::Edit edit;
+	//edit.clearSurface(surf, 800, 800);
 	(*p).x = (*p).resetx;
 	(*p).y = (*p).resety;
+	/*int send[5];
+	send[0] = CLEAR;
+	send[1] = (*p).x;
+	send[2] = (*p).index;
+	send[3] = (*p).dir;
+	send[4] = (*p).y;
+	asio::error_code ignore;
+	asio::write(*sock, asio::buffer(send), ignore);*/
+	(*p).clear = true;
+	std::cout << "Multiplayer death called" << std::endl;
+	return;
+}
+void writePass(asio::ip::tcp::socket* sock, Entity* p) {
 	int send[5];
 	send[0] = SETCOORDS;
+	if ((*p).clear) {
+		send[0] = CLEAR;
+		(*p).clear = false;
+		std::cout << "Writing CLEAR" << std::endl;
+	}
+	std::cout << "Writing " << (*p).x << " : " << (*p).y << std::endl;
 	send[1] = (*p).x;
 	send[2] = (*p).index;
 	send[3] = (*p).dir;
 	send[4] = (*p).y;
 	asio::error_code ignore;
 	asio::write(*sock, asio::buffer(send), ignore);
-	std::cout << "Multiplayer death called" << std::endl;
 }
 
-size_t readPass(asio::ip::tcp::socket* sock, Entity* p) {
+
+size_t readPass(asio::ip::tcp::socket* sock, SDL_Surface* surf, Entity* p) {
 	int buf[5];
 	asio::error_code ecode;
 	size_t bytes = (*sock).available();
@@ -143,7 +159,15 @@ size_t readPass(asio::ip::tcp::socket* sock, Entity* p) {
 			dummies[buf[0]].x = buf[2];
 			dummies[buf[0]].y = buf[4];
 			dummies[buf[0]].dir = buf[3];
-			std::cout << "SETCOORDS Recieved" << " X:" << buf[2] << " Y:" << buf[4] << std::endl;
+			//std::cout << "SETCOORDS Recieved" << " X:" << buf[2] << " Y:" << buf[4] << std::endl;
+			break;
+		case CLEAR:
+			Gore::Edit edit;
+			edit.clearSurface(surf, 800, 800);
+			dummies[buf[0]].x = buf[2];
+			dummies[buf[0]].y = buf[4];
+			dummies[buf[0]].dir = buf[3];
+			std::cout << "Reading CLEAR" << std::endl;
 			break;
 		}
 		if (ecode == asio::error::eof) {

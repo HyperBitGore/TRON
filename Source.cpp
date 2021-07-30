@@ -18,17 +18,10 @@ void onlineMode(asio::ip::tcp::socket *sock, Entity *p, float delta, SDL_Rendere
 	//Use points to store needed changes and then send said changes to server and clear the points vector
 	//Have an online player update function that communicates with this function
 	//Send what the packet is and have the packet contain the data of the coord
-	int send[5];
-	send[0] = SETCOORDS;
-	send[1] = (*p).x;
-	send[2] = (*p).index;
-	send[3] = (*p).dir;
-	send[4] = (*p).y;
-	asio::error_code ignore;
-	asio::write(*sock, asio::buffer(send), ignore);
+	writePass(sock, p);
 	while ((*sock).available() > 0) {
 		std::cout << "Reading: " << (*sock).available() << std::endl;
-		readPass(sock, p);
+		readPass(sock, surf, p);
 	}
 	int sendt[1];
 	sendt[0] = RECIEVED;
