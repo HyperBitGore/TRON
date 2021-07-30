@@ -7,28 +7,28 @@ void dummyUpdate(Dummy *p, float delta, SDL_Renderer* rend, SDL_Surface* surf) {
 	switch ((*p).dir) {
 	case 1:
 		for (int i = (*p).y; i < (*p).ly; i++) {
-			//edit.setPixelRGBASafe(surf, (*p).x, i, 0, 100, 255, 255, 800, 800);
+			edit.setPixelRGBASafe(surf, (*p).x, i, 0, 100, 255, 255, 800, 800);
 		}
 		(*p).w = 1;
 		(*p).h = 10;
 		break;
 	case 2:
 		for (int i = (*p).ly; i < (*p).y; i++) {
-			//edit.setPixelRGBASafe(surf, (*p).x, i, 0, 100, 255, 255, 800, 800);
+			edit.setPixelRGBASafe(surf, (*p).x, i, 0, 100, 255, 255, 800, 800);
 		}
 		(*p).w = 1;
 		(*p).h = 10;
 		break;
 	case 3:
 		for (int i = (*p).x; i < (*p).lx; i++) {
-			//edit.setPixelRGBASafe(surf, i, (*p).y, 0, 100, 255, 255, 800, 800);
+			edit.setPixelRGBASafe(surf, i, (*p).y, 0, 100, 255, 255, 800, 800);
 		}
 		(*p).w = 10;
 		(*p).h = 1;
 		break;
 	case 4:
 		for (int i = (*p).lx; i < (*p).x; i++) {
-			//edit.setPixelRGBASafe(surf, i, (*p).y, 0, 100, 255, 255, 800, 800);
+			edit.setPixelRGBASafe(surf, i, (*p).y, 0, 100, 255, 255, 800, 800);
 		}
 		(*p).w = 10;
 		(*p).h = 1;
@@ -88,41 +88,36 @@ void playerUpdateMultiplayer(Entity* p, asio::ip::tcp::socket* sock, std::vector
 			(*p).h = 1;
 		}
 	}
-	//Fix multiplayer death being called continously even when inside bounds
 	if ((*p).x <= 0 || (*p).x >= 800 || (*p).y <= 0 || (*p).y >= 800) {
-		std::cout << "Player out of bounds" << std::endl;
 		multiDeath(p, surf, sock);
-		return;
-		//death(&(*p), enemies, surf, !wasd);
 	}
 	switch ((*p).dir) {
 	case 1:
 		(*p).y -= (float)250 * delta;
 		if (edit.getPixelSafe(surf, (*p).x, (*p).y - 1) != 0) {
-			death(&(*p), enemies, surf, !wasd);
+			multiDeath(p, surf, sock);
 		}
 		break;
 	case 2:
 		(*p).y += (float)250 * delta;
 		if (edit.getPixelSafe(surf, (*p).x, (*p).y + (*p).h + 1) != 0) {
-			death(&(*p), enemies, surf, !wasd);
+			multiDeath(p, surf, sock);
 		}
 		break;
 	case 3:
 		(*p).x -= (float)250 * delta;
 		if (edit.getPixelSafe(surf, (*p).x - 1, (*p).y) != 0) {
-			death(&(*p), enemies, surf, !wasd);
+			multiDeath(p, surf, sock);
 		}
 		break;
 	case 4:
 		(*p).x += (float)250 * delta;
 		if (edit.getPixelSafe(surf, (*p).x + (*p).w + 1, (*p).y) != 0) {
-			death(&(*p), enemies, surf, !wasd);
+			multiDeath(p, surf, sock);
 		}
 		break;
 
 	}
-	std::cout << "Player X: " << (*p).x << " Player Y: " << (*p).y << std::endl;
 	(*p).ly = (*p).y;
 	(*p).lx = (*p).x;
 }

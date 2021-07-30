@@ -7,12 +7,10 @@ int p2score = 0;
 asio::io_context aio;
 std::vector<Dummy> dummies;
 
-//Fix multiplayer death function and pretty much finished, besides improving networking to work faster
+//Improve network code to not be laggy
 void onlineMode(asio::ip::tcp::socket *sock, Entity *p, float delta, SDL_Renderer* rend, SDL_Surface* surf) {
 	for (int i = 0; i < dummies.size(); i++) {
 		dummyUpdate(&dummies[i], delta, rend, surf);
-		//std::cout << dummies[i].index << " i: " << i << std::endl;
-		//std::cout << dummies[i].x << " : " << dummies[i].y << std::endl;
 	}
 	//Need server to be running or the connection will throw esoteric exception unless catch error code like so
 	//Use points to store needed changes and then send said changes to server and clear the points vector
@@ -20,19 +18,12 @@ void onlineMode(asio::ip::tcp::socket *sock, Entity *p, float delta, SDL_Rendere
 	//Send what the packet is and have the packet contain the data of the coord
 	writePass(sock, p);
 	while ((*sock).available() > 0) {
-		std::cout << "Reading: " << (*sock).available() << std::endl;
 		readPass(sock, surf, p);
 	}
 	int sendt[1];
 	sendt[0] = RECIEVED;
 	asio::error_code gc;
 	asio::write(*sock, asio::buffer(sendt), gc);
-	/*if ((*sock).available() > 20) {
-		for (int i = 0; i < (*sock).available() / 20; i++) {
-			readPass(sock, p);
-		}
-	}
-	readPass(sock, p);*/
 }
 void startOnlineMode(asio::ip::tcp::socket *sock, Entity *p) {
 	asio::error_code eg;

@@ -92,20 +92,9 @@ void death(Entity *p, std::vector<Entity>& enemies, SDL_Surface* surf, bool p2) 
 
 }
 void multiDeath(Entity* p, SDL_Surface* surf, asio::ip::tcp::socket* sock) {
-	//Gore::Edit edit;
-	//edit.clearSurface(surf, 800, 800);
 	(*p).x = (*p).resetx;
 	(*p).y = (*p).resety;
-	/*int send[5];
-	send[0] = CLEAR;
-	send[1] = (*p).x;
-	send[2] = (*p).index;
-	send[3] = (*p).dir;
-	send[4] = (*p).y;
-	asio::error_code ignore;
-	asio::write(*sock, asio::buffer(send), ignore);*/
 	(*p).clear = true;
-	std::cout << "Multiplayer death called" << std::endl;
 	return;
 }
 void writePass(asio::ip::tcp::socket* sock, Entity* p) {
@@ -114,9 +103,7 @@ void writePass(asio::ip::tcp::socket* sock, Entity* p) {
 	if ((*p).clear) {
 		send[0] = CLEAR;
 		(*p).clear = false;
-		std::cout << "Writing CLEAR" << std::endl;
 	}
-	std::cout << "Writing " << (*p).x << " : " << (*p).y << std::endl;
 	send[1] = (*p).x;
 	send[2] = (*p).index;
 	send[3] = (*p).dir;
@@ -159,7 +146,6 @@ size_t readPass(asio::ip::tcp::socket* sock, SDL_Surface* surf, Entity* p) {
 			dummies[buf[0]].x = buf[2];
 			dummies[buf[0]].y = buf[4];
 			dummies[buf[0]].dir = buf[3];
-			//std::cout << "SETCOORDS Recieved" << " X:" << buf[2] << " Y:" << buf[4] << std::endl;
 			break;
 		case CLEAR:
 			Gore::Edit edit;
@@ -167,7 +153,11 @@ size_t readPass(asio::ip::tcp::socket* sock, SDL_Surface* surf, Entity* p) {
 			dummies[buf[0]].x = buf[2];
 			dummies[buf[0]].y = buf[4];
 			dummies[buf[0]].dir = buf[3];
-			std::cout << "Reading CLEAR" << std::endl;
+			if (buf[0] == (*p).index) {
+				(*p).x = buf[2];
+				(*p).y = buf[4];
+				(*p).dir = buf[3];
+			}
 			break;
 		}
 		if (ecode == asio::error::eof) {

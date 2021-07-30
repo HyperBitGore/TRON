@@ -76,7 +76,6 @@ void sendChanges(asio::ip::tcp::socket* soc) {
 			case SETCOORDS:
 				buf[2] = i.x;
 				buf[4] = i.y;
-				//std::cout << "Sending set coords X: " << i.x << " Y:" << i.y << std::endl;
 				break;
 			case CLEAR:
 				buf[2] = i.x;
